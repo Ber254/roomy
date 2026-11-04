@@ -113,7 +113,7 @@ export default function DaoPanel(props: {
               <input className={field} value={deposit} onChange={(e) => setDeposit(e.target.value)} aria-label="Depósito de creación en NEAR" />
             </div>
             <p className="text-xs text-zinc-500">
-              Se creará <code>{target}</code>. El depósito de creación (NEAR) es un valor a confirmar contra el factory <code>{DAO_FACTORY[network]}</code>.
+              Se creará <code>{target}</code>. Cada DAO ocupa ~543 KB (unos 5.4 NEAR de almacenamiento): el mínimo práctico es ~5.5 NEAR, según DAOs reales de <code>{DAO_FACTORY[network]}</code>. Lo que sobre queda como fondo inicial.
               {withNear.length < members.length && " Los roomies sin cuenta NEAR se agregan después con una propuesta."}
             </p>
             <button

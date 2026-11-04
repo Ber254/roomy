@@ -109,3 +109,14 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - `tools/e2e/e2e.js`: 3 usuarios en navegadores distintos contra el build de producción y Postgres real. **55 verificaciones, todas pasan**: crear casa, unirse con código (y código inválido), gastos y splits exactos, deudas simplificadas, validaciones, aislamiento sin sesión (401), cuenta NEAR, cotización `dry` real de 1Click, un solo pago abierto por par, liquidación que baja la deuda, chat por polling entre dos usuarios, límites del chat, HTML mostrado como texto (sin XSS), tareas con permisos y rotación semanal, rutas de DAO y garantías con RPC caído (502 controlado, sin crash).
 - Bug encontrado y corregido: si 1Click no puede resolver los datos (por ejemplo, cuenta NEAR de destino inexistente) responde `400 Internal server error`, que llegaba tal cual al usuario. Ahora se traduce a un mensaje accionable (`friendlyQuoteError`).
 - **Límites de esta verificación:** la cotización real (no `dry`) solo corre con `E2E_REAL_QUOTE=1`; el depósito, la firma con wallet, el RPC de NEAR y el DAO/escrow en red siguen sin probar. Dos fallos intermedios de la prueba eran de la propia prueba (expresión demasiado laxa y lectura antes del render), no de la app.
+
+### 2026-11-04 (día 2, noche V) — red de NEAR desbloqueada y primeras verificaciones on-chain
+- RPC permitidos (`rpc.{testnet,mainnet}.{near.org,fastnear.com}`): responden 200 desde el entorno.
+- **Verificado contra testnet real** (`NEAR_LIVE=1 npm test`, 3 pruebas de solo lectura):
+  - el factory `sputnikv2.testnet` existe (5.403 DAOs);
+  - la forma de nuestra política de casa (`housePolicy`) es idéntica a la de un DAO real (claves, roles, permisos, `default_vote_policy`);
+  - propuestas `Vote` y `Transfer` reales se leen bien con `describeKind` y `tally`.
+- Corregido: el RPC devuelve `vote_counts` como números, no como strings (tipo ajustado).
+- **Depósito de creación del DAO verificado indirectamente:** los DAOs reales en testnet ocupan ~543 KB (~5.4 NEAR de almacenamiento bloqueado; el código del repo del factory usa contratos globales con mínimo de 0.01 NEAR, pero el factory desplegado en testnet no lo hace). Mínimo práctico ~5.5 NEAR; el default de 6 queda justificado. Ya no es "a confirmar", pero la creación real aún no se ejecutó.
+- Nombres sugeridos disponibles en testnet: `roomy-escrow-bernardo`, `roomy-hugo-bernardo`, `roomy-ana-bernardo` (`.testnet`).
+- **Siguen sin verificar:** firma con wallet real, ejecución de `create` del DAO, despliegue del escrow y su ciclo, pago real por Intents.

@@ -12,7 +12,7 @@ export type ProposalOut = {
   description: string;
   kind: unknown;
   status: ProposalStatus;
-  vote_counts: Record<string, [string, string, string]>;
+  vote_counts: Record<string, [string | number, string | number, string | number]>; // el RPC los devuelve como números
   votes: Record<string, "Approve" | "Reject" | "Remove">;
   submission_time: string;
 };

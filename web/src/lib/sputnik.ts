@@ -47,7 +47,9 @@ export function housePolicy(members: string[], bondYocto = DEFAULT_BOND_YOCTO) {
 
 /**
  * Crea el DAO de la casa como subcuenta del factory (`<name>.sputnikv2.testnet`).
- * `depositYocto` es el costo de creación: confirmar el mínimo del factory en testnet antes de usarlo.
+ * `depositYocto` es el costo de creación. Verificado en testnet (2026-11-04): los DAOs reales ocupan ~543 KB
+ * (~5.4 NEAR de almacenamiento bloqueado, el código se copia en cada cuenta), así que el mínimo práctico es ~5.5 NEAR;
+ * el saldo restante queda como fondo inicial. El mínimo que valida el factory (0.01 NEAR) no alcanza para mantener la cuenta.
  */
 export function createDaoTx(
   factory: string,
