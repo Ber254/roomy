@@ -10,11 +10,11 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Área | Estado | Nota |
 |---|---|---|
 | Scaffold Next.js 15 + Tailwind | ✅ | `web/` |
-| Schema DB (Neon + Drizzle) | ✅ | Migración generada, **no aplicada** (falta `DATABASE_URL`) |
+| Schema DB (Neon + Drizzle) | ✅ | Aplicado a Neon con `db:push` (10 tablas) |
 | Lógica de balances + tests | ✅ | `web/src/lib/balances.ts` |
 | Contrato escrow (Rust) | ✅ | 7 tests; no desplegado todavía |
 | Pagos vía NEAR Intents | ⛔ | Red del entorno bloquea `1click.chaindefuser.com` |
-| UI: casas, invitaciones, gastos | ⬜ | |
+| UI: casas, invitaciones, gastos | 🟡 | Escrita (inicio, panel de casa, acciones). Compila y pasa lint, **sin probar contra la base**: falta probarla en local |
 | UI: pagar con Intents | ⬜ | Depende del desbloqueo de red |
 | UI: garantías on-chain | ⬜ | |
 | Chat (polling), tareas | ⬜ | |
@@ -59,3 +59,6 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Revisado `Ber254/stellar-rental-guarantee` (Safexy): Next.js + Drizzle/Neon + contrato Soroban en Stellar testnet.
 - Decisión: escrow NEAR propio como garantía on-chain; portar a NEAR el flujo de acuerdo de Safexy (solicitar devolución, aprobar/rechazar/contraofertar, devoluciones parciales).
 - 1Click sigue bloqueado (403) tras reintento.
+- Schema aplicado a Neon por el usuario (`npm run db:push` OK). Bug corregido: `drizzle.config.ts` no cargaba `.env.local`.
+- UI v0: crear casa, unirse con código, registrar gastos con split, balances y deudas simplificadas. Botón "Pagar con NEAR" deshabilitado hasta tener el cliente de Intents.
+- Pendiente de probar: flujo completo en local (`npm run dev`), porque el entorno no llega a Neon.
