@@ -2,6 +2,7 @@
 import { yoctoToNear } from "./near";
 import { DAO_FACTORY } from "./sputnik";
 import type { NearNetwork } from "./near";
+import type { Key, TFn } from "@/i18n";
 
 export type ProposalStatus = "InProgress" | "Approved" | "Rejected" | "Removed" | "Expired" | "Moved" | "Failed";
 
@@ -40,28 +41,21 @@ export function isHouseDaoAccount(account: string, network: NearNetwork): boolea
 type Kind = Record<string, Record<string, string>> | string;
 
 /** Texto legible de una propuesta según su tipo. */
-export function describeKind(kind: unknown): string {
-  if (kind === "Vote") return "Decisión de la casa";
+export function describeKind(kind: unknown, t: TFn): string {
+  if (kind === "Vote") return t("kind.vote");
   const k = kind as Kind;
   if (k && typeof k === "object") {
     if ("Transfer" in k) {
-      const t = k.Transfer;
-      return `Pago del fondo: ${yoctoToNear(t.amount)} NEAR a ${t.receiver_id}`;
+      const x = k.Transfer;
+      return t("kind.transfer", { amount: yoctoToNear(x.amount), to: x.receiver_id });
     }
-    if ("AddMemberToRole" in k) return `Agregar roomie: ${k.AddMemberToRole.member_id}`;
+    if ("AddMemberToRole" in k) return t("kind.addMember", { member: k.AddMemberToRole.member_id });
   }
-  return "Otra propuesta";
+  return t("kind.other");
 }
 
-export const STATUS_ES: Record<ProposalStatus, string> = {
-  InProgress: "en votación",
-  Approved: "aprobada",
-  Rejected: "rechazada",
-  Removed: "eliminada",
-  Expired: "vencida",
-  Moved: "movida",
-  Failed: "falló al ejecutar",
-};
+/** Clave de traducción del estado de una propuesta. */
+export const statusKey = (s: ProposalStatus) => `prop.status.${s}` as Key;
 
 /** [a favor, en contra, spam] sumando todos los roles. */
 export function tally(p: Pick<ProposalOut, "vote_counts">): { yes: number; no: number; spam: number } {

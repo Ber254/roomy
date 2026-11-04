@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { NearConnector } from "@hot-labs/near-connect";
 import type { NearNetwork, Tx } from "@/lib/near";
+import { useT } from "@/i18n/client";
 
 type Ctx = {
   network: NearNetwork;
@@ -75,21 +76,22 @@ export function WalletProvider({ network, children }: { network: NearNetwork; ch
 
 export function WalletButton() {
   const { account, connect, disconnect, network } = useWallet();
+  const t = useT();
   const [err, setErr] = useState<string | null>(null);
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-zinc-500">Red: <strong>{network}</strong></span>
+      <span className="text-zinc-500">{t("w.network")} <strong>{network}</strong></span>
       {account ? (
         <span>
-          Wallet: <strong>{account}</strong>{" "}
-          <button className="underline" onClick={disconnect}>salir</button>
+          {t("w.wallet")} <strong>{account}</strong>{" "}
+          <button className="underline" onClick={disconnect}>{t("w.signOut")}</button>
         </span>
       ) : (
         <button
           className="rounded-md bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700"
           onClick={async () => setErr(await connect())}
         >
-          Conectar wallet NEAR
+          {t("w.connect")}
         </button>
       )}
       {err && <span role="alert" className="text-red-600">{err}</span>}

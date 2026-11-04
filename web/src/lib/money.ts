@@ -7,8 +7,8 @@ export function parseAmountToCents(input: string): number | null {
   return cents > 0 ? cents : null;
 }
 
-export function formatCents(cents: number, currency = "USD"): string {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency }).format(
+export function formatCents(cents: number, currency = "USD", locale = "es-AR"): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(
     cents / 100,
   );
 }

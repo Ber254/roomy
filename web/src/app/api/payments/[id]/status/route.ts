@@ -4,17 +4,19 @@ import { db, payments } from "@/db";
 import { getCurrentMember } from "@/lib/session";
 import { getStatus, isFinal } from "@/lib/intents";
 import { mapSwapStatus } from "@/lib/payments";
+import { getT } from "@/i18n/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Consulta a 1Click y sincroniza el estado del pago. Solo miembros de la casa. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const { id } = await params;
-  if (!UUID.test(id)) return NextResponse.json({ error: "Id inválido" }, { status: 400 });
+  if (!UUID.test(id)) return NextResponse.json({ error: t("api.badId") }, { status: 400 });
 
   const [p] = await db.select().from(payments).where(eq(payments.id, id));
-  if (!p) return NextResponse.json({ error: "Pago no encontrado" }, { status: 404 });
-  if (!(await getCurrentMember(p.houseId))) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  if (!p) return NextResponse.json({ error: t("api.paymentNotFound") }, { status: 404 });
+  if (!(await getCurrentMember(p.houseId))) return NextResponse.json({ error: t("api.unauth") }, { status: 401 });
   if (!p.depositAddress) return NextResponse.json({ payment: p });
   if (p.status === "settled" || p.status === "refunded" || p.status === "failed") {
     return NextResponse.json({ payment: p });

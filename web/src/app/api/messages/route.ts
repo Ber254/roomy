@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { db, messages } from "@/db";
 import { getCurrentMember } from "@/lib/session";
 import { CHAT_PAGE, cleanMessage } from "@/lib/chat";
+import { getT } from "@/i18n/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const err = (error: string, status = 400) => NextResponse.json({ error }, { status });
@@ -12,14 +13,15 @@ const out = (m: typeof messages.$inferSelect) => ({
 
 /** Mensajes de la casa. Sin `after`: los últimos 50. Con `after` (ISO): solo los más nuevos. */
 export async function GET(req: Request) {
+  const t = await getT();
   const url = new URL(req.url);
   const houseId = url.searchParams.get("houseId") ?? "";
-  if (!UUID.test(houseId)) return err("Id inválido");
-  if (!(await getCurrentMember(houseId))) return err("No autorizado", 401);
+  if (!UUID.test(houseId)) return err(t("api.badId"));
+  if (!(await getCurrentMember(houseId))) return err(t("api.unauth"), 401);
 
   const afterRaw = url.searchParams.get("after");
   const after = afterRaw ? new Date(afterRaw) : null;
-  if (after && Number.isNaN(after.getTime())) return err("Fecha inválida");
+  if (after && Number.isNaN(after.getTime())) return err(t("api.badDate"));
 
   const rows = after
     ? await db.select().from(messages).where(and(eq(messages.houseId, houseId), gt(messages.createdAt, after))).orderBy(asc(messages.createdAt)).limit(200)
@@ -28,13 +30,14 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const t = await getT();
   const body = await req.json().catch(() => null);
   const { houseId, text } = (body ?? {}) as Record<string, unknown>;
-  if (typeof houseId !== "string" || !UUID.test(houseId)) return err("Datos inválidos");
+  if (typeof houseId !== "string" || !UUID.test(houseId)) return err(t("api.badData"));
   const me = await getCurrentMember(houseId);
-  if (!me) return err("No autorizado", 401);
+  if (!me) return err(t("api.unauth"), 401);
   const clean = cleanMessage(text);
-  if (!clean) return err("Mensaje vacío o demasiado largo");
+  if (!clean) return err(t("api.badMessage"));
 
   const [row] = await db.insert(messages).values({ houseId, authorId: me.id, body: clean }).returning();
   return NextResponse.json({ message: out(row) });

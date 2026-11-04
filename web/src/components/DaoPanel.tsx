@@ -6,7 +6,9 @@ import {
   actProposalTx, addMemberProposalKind, addProposalTx, createDaoTx, DAO_FACTORY,
   DEFAULT_BOND_YOCTO, transferProposalKind, voteProposalKind,
 } from "@/lib/sputnik";
-import { canVote, daoAccountId, describeKind, myVote, slugifyDaoName, STATUS_ES, tally, type ProposalOut } from "@/lib/sputnik-ui";
+import { canVote, daoAccountId, describeKind, myVote, slugifyDaoName, statusKey, tally, type ProposalOut } from "@/lib/sputnik-ui";
+import { useI18n } from "@/i18n/client";
+import type { Key } from "@/i18n";
 import { useWallet } from "./WalletProvider";
 
 type Member = { memberId: string; name: string; nearAccount: string | null; isHost: boolean };
@@ -24,15 +26,18 @@ export default function DaoPanel(props: {
   houseName: string;
   isHost: boolean;
   members: Member[];
-  /** depósito de creación del DAO, en NEAR (a confirmar contra el factory en testnet) */
+  /** depósito de creación del DAO, en NEAR (mínimo práctico ~5.5, verificado con DAOs reales en testnet) */
   createDepositNear: string;
 }) {
   const { houseId, houseName, isHost, members, createDepositNear } = props;
+  const t = useI18n().t;
   const { account, network, send } = useWallet();
   const [chain, setChain] = useState<Chain | null>(null);
   const [tick, setTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // true si el DAO se creó on-chain pero falló registrarlo en la casa: permite reintentar sin volver a pagar
+  const [needRegister, setNeedRegister] = useState(false);
 
   // formularios
   const [daoName, setDaoName] = useState(slugifyDaoName(houseName));
@@ -68,7 +73,7 @@ export default function DaoPanel(props: {
         const e2 = await after();
         if (e2) return setError(e2);
       }
-      setTick((t) => t + 1);
+      setTick((n) => n + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
@@ -76,19 +81,19 @@ export default function DaoPanel(props: {
     }
   }, [send]);
 
-  const register = async (account: string) => {
+  const register = async (acct: string) => {
     const res = await fetch("/api/dao", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ houseId, daoAccount: account }),
+      body: JSON.stringify({ houseId, daoAccount: acct }),
     });
     const data = await res.json();
     return res.ok ? null : (data.error as string);
   };
 
-  const yocto = (v: string, label: string) => {
+  const yocto = (v: string, labelKey: Key) => {
     const y = nearToYocto(v);
-    if (!y) setError(`${label}: monto inválido (ej: 1.5)`);
+    if (!y) setError(t("d.badAmount", { label: t(labelKey) }));
     return y;
   };
 
@@ -99,44 +104,45 @@ export default function DaoPanel(props: {
     return (
       <div className={box}>
         {!isHost ? (
-          <p className="text-sm text-zinc-500">El hospedante todavía no creó el DAO de la casa (fondo común y votaciones).</p>
+          <p className="text-sm text-zinc-500">{t("d.noHostYet")}</p>
         ) : !hostNear ? (
-          <p className="text-sm text-zinc-500">Configurá tu cuenta NEAR arriba para poder crear el DAO.</p>
+          <p className="text-sm text-zinc-500">{t("d.setNearFirst")}</p>
         ) : (
           <>
-            <p className="text-sm">
-              Crear el DAO de la casa en <strong>Sputnik</strong>: los roomies con cuenta NEAR (<strong>{withNear.length}</strong> de {members.length}) serán el
-              consejo y decidirán por mayoría simple.
-            </p>
+            <p className="text-sm">{t("d.createIntro", { with: withNear.length, total: members.length })}</p>
             <div className="flex flex-wrap gap-2">
-              <input className={field} value={daoName} onChange={(e) => setDaoName(e.target.value.toLowerCase())} aria-label="Nombre del DAO" />
-              <input className={field} value={deposit} onChange={(e) => setDeposit(e.target.value)} aria-label="Depósito de creación en NEAR" />
+              <input className={field} value={daoName} onChange={(e) => setDaoName(e.target.value.toLowerCase())} aria-label={t("d.nameAria")} />
+              <input className={field} value={deposit} onChange={(e) => setDeposit(e.target.value)} aria-label={t("d.depositAria")} />
             </div>
             <p className="text-xs text-zinc-500">
-              Se creará <code>{target}</code>. Cada DAO ocupa ~543 KB (unos 5.4 NEAR de almacenamiento): el mínimo práctico es ~5.5 NEAR, según DAOs reales de <code>{DAO_FACTORY[network]}</code>. Lo que sobre queda como fondo inicial.
-              {withNear.length < members.length && " Los roomies sin cuenta NEAR se agregan después con una propuesta."}
+              {t("d.willCreate", { account: target, factory: DAO_FACTORY[network] })}
+              {withNear.length < members.length && ` ${t("d.missingNearNote")}`}
             </p>
             <button
               className={btn}
               disabled={busy || !account}
               onClick={() => {
-                if (account !== hostNear) return setError(`Conectá la wallet ${hostNear} (la del hospedante)`);
-                const dep = yocto(deposit, "Depósito");
+                if (account !== hostNear) return setError(t("d.wrongWallet", { account: hostNear }));
+                const dep = yocto(deposit, "d.lbl.deposit");
                 if (!dep) return;
                 run(
                   () => createDaoTx(DAO_FACTORY[network], daoName, houseName, withNear.map((m) => m.nearAccount!), dep),
-                  () => register(target),
+                  async () => {
+                    const e = await register(target);
+                    setNeedRegister(!!e);
+                    return e;
+                  },
                 );
               }}
             >
-              Crear DAO
+              {t("d.createBtn")}
             </button>
-            {!account && <p className="text-xs text-zinc-500">Conectá tu wallet para continuar.</p>}
-            {error?.includes("registr") || error?.includes("verificar") ? (
-              <button className="text-sm underline" onClick={async () => { const e = await register(target); if (e) setError(e); else setTick((t) => t + 1); }}>
-                Reintentar registro del DAO
+            {!account && <p className="text-xs text-zinc-500">{t("d.connectToContinue")}</p>}
+            {needRegister && (
+              <button className="text-sm underline" onClick={async () => { const e = await register(target); if (e) setError(e); else { setNeedRegister(false); setError(null); setTick((n) => n + 1); } }}>
+                {t("d.retryRegister")}
               </button>
-            ) : null}
+            )}
           </>
         )}
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
@@ -144,13 +150,14 @@ export default function DaoPanel(props: {
     );
   }
 
-  if (!chain) return <p className="text-sm text-zinc-500">Cargando…</p>;
+  if (!chain) return <p className="text-sm text-zinc-500">{t("d.loading")}</p>;
 
   // ---------- con DAO ----------
   const inCouncil = !!account && council.includes(account);
   const notInCouncil = withNear.filter((m) => !council.includes(m.nearAccount!));
   const propose = (desc: string, kind: Parameters<typeof addProposalTx>[2], reset?: () => void) =>
     run(() => addProposalTx(dao!, desc, kind, bond), async () => { reset?.(); return null; });
+  const voteLabel = (v: "Approve" | "Reject" | "Remove") => t(v === "Approve" ? "d.v.approve" : v === "Reject" ? "d.v.reject" : "d.v.remove");
 
   return (
     <div className="space-y-4">
@@ -160,77 +167,75 @@ export default function DaoPanel(props: {
       <div className={box}>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <span className="text-sm text-zinc-500">DAO <code>{dao}</code></span>
-          <span>Fondo común: <strong>{chain.balanceYocto ? yoctoToNear(chain.balanceYocto) : "—"} NEAR</strong></span>
+          <span>{t("d.fund", { amount: chain.balanceYocto ? yoctoToNear(chain.balanceYocto) : "—" })}</span>
         </div>
-        <p className="text-xs text-zinc-500">Consejo ({council.length}): {council.join(", ") || "—"}</p>
+        <p className="text-xs text-zinc-500">{t("d.council", { n: council.length, list: council.join(", ") || "—" })}</p>
         <div className="flex gap-2">
-          <input className={field} placeholder="Aportar al fondo (NEAR)" value={fund} onChange={(e) => setFund(e.target.value)} />
-          <button className={btn} disabled={busy || !account} onClick={() => { const y = yocto(fund, "Aporte"); if (y) run(() => transferTx(dao!, y), async () => { setFund(""); return null; }); }}>
-            Aportar
+          <input className={field} placeholder={t("d.contribPh")} value={fund} onChange={(e) => setFund(e.target.value)} />
+          <button className={btn} disabled={busy || !account} onClick={() => { const y = yocto(fund, "d.lbl.contribution"); if (y) run(() => transferTx(dao!, y), async () => { setFund(""); return null; }); }}>
+            {t("d.contribBtn")}
           </button>
         </div>
       </div>
 
       <div className={box}>
-        <h3 className="font-medium">Nueva decisión de la casa</h3>
+        <h3 className="font-medium">{t("d.newDecision")}</h3>
         <div className="flex gap-2">
-          <input className={field} placeholder="Ej: ¿Compramos un aspirador compartido?" value={decision} onChange={(e) => setDecision(e.target.value)} maxLength={300} />
+          <input className={field} placeholder={t("d.decisionPh")} value={decision} onChange={(e) => setDecision(e.target.value)} maxLength={300} />
           <button className={btn} disabled={busy || !account || !decision.trim()} onClick={() => propose(decision.trim(), voteProposalKind(), () => setDecision(""))}>
-            Proponer
+            {t("d.proposeBtn")}
           </button>
         </div>
-        <h3 className="pt-2 font-medium">Pedir un pago del fondo</h3>
+        <h3 className="pt-2 font-medium">{t("d.requestPayment")}</h3>
         <div className="flex flex-wrap gap-2">
-          <select className={field} value={payTo} onChange={(e) => setPayTo(e.target.value)} aria-label="Destinatario">
-            <option value="">Destinatario…</option>
+          <select className={field} value={payTo} onChange={(e) => setPayTo(e.target.value)} aria-label={t("d.recipientAria")}>
+            <option value="">{t("d.recipient")}</option>
             {withNear.map((m) => <option key={m.memberId} value={m.nearAccount!}>{m.name} ({m.nearAccount})</option>)}
           </select>
-          <input className={field} placeholder="Monto (NEAR)" value={payAmt} onChange={(e) => setPayAmt(e.target.value)} />
-          <input className={field} placeholder="Motivo (ej: reparación del termotanque)" value={payWhy} onChange={(e) => setPayWhy(e.target.value)} maxLength={300} />
+          <input className={field} placeholder={t("d.amountPh")} value={payAmt} onChange={(e) => setPayAmt(e.target.value)} />
+          <input className={field} placeholder={t("d.reasonPh")} value={payWhy} onChange={(e) => setPayWhy(e.target.value)} maxLength={300} />
           <button
             className={btn}
             disabled={busy || !account || !payTo || !payWhy.trim()}
-            onClick={() => { const y = yocto(payAmt, "Pago"); if (y) propose(payWhy.trim(), transferProposalKind(payTo, y), () => { setPayAmt(""); setPayWhy(""); }); }}
+            onClick={() => { const y = yocto(payAmt, "d.lbl.payment"); if (y) propose(payWhy.trim(), transferProposalKind(payTo, y), () => { setPayAmt(""); setPayWhy(""); }); }}
           >
-            Pedir pago
+            {t("d.requestBtn")}
           </button>
         </div>
         {notInCouncil.length > 0 && (
           <div className="pt-2 text-sm">
-            <span className="text-zinc-500">Todavía fuera del consejo: </span>
+            <span className="text-zinc-500">{t("d.outside")} </span>
             {notInCouncil.map((m) => (
               <button key={m.memberId} className="mr-2 underline" disabled={busy || !account}
-                onClick={() => propose(`Agregar a ${m.name} al consejo`, addMemberProposalKind(m.nearAccount!))}>
-                Proponer a {m.name}
+                onClick={() => propose(t("d.addMemberDesc", { name: m.name }), addMemberProposalKind(m.nearAccount!))}>
+                {t("d.proposeMember", { name: m.name })}
               </button>
             ))}
           </div>
         )}
-        <p className="text-xs text-zinc-500">
-          Cada propuesta requiere un bond de {yoctoToNear(bond)} NEAR: se devuelve al aprobarse o rechazarse, no si la marcan como spam.
-        </p>
-        {!account && <p className="text-xs text-zinc-500">Conectá tu wallet para proponer y votar.</p>}
-        {account && !inCouncil && <p className="text-xs text-zinc-500">Tu wallet ({account}) no está en el consejo: podés proponer, pero no votar.</p>}
+        <p className="text-xs text-zinc-500">{t("d.bondNote", { bond: yoctoToNear(bond) })}</p>
+        {!account && <p className="text-xs text-zinc-500">{t("d.connectToVote")}</p>}
+        {account && !inCouncil && <p className="text-xs text-zinc-500">{t("d.notCouncil", { account })}</p>}
       </div>
 
       <div className="space-y-2">
-        <h3 className="font-medium">Propuestas</h3>
-        {(chain.proposals ?? []).length === 0 && <p className="text-sm text-zinc-500">Todavía no hay propuestas.</p>}
+        <h3 className="font-medium">{t("d.proposals")}</h3>
+        {(chain.proposals ?? []).length === 0 && <p className="text-sm text-zinc-500">{t("d.noProposals")}</p>}
         {(chain.proposals ?? []).map((p) => {
-          const t = tally(p);
+          const tl = tally(p);
           const mine = myVote(p, account);
           return (
             <div key={p.id} className={box}>
               <div className="flex justify-between gap-2">
                 <strong>{p.description}</strong>
-                <span className="shrink-0 text-sm text-zinc-500">{STATUS_ES[p.status]}</span>
+                <span className="shrink-0 text-sm text-zinc-500">{t(statusKey(p.status))}</span>
               </div>
-              <p className="text-xs text-zinc-500">{describeKind(p.kind)} · propone {p.proposer}</p>
-              <p className="text-sm">A favor <strong>{t.yes}</strong> · En contra <strong>{t.no}</strong>{mine && <> · tu voto: {mine === "Approve" ? "a favor" : mine === "Reject" ? "en contra" : "spam"}</>}</p>
+              <p className="text-xs text-zinc-500">{describeKind(p.kind, t)} · {t("d.proposedBy", { name: p.proposer })}</p>
+              <p className="text-sm">{t("d.votesLine", { yes: tl.yes, no: tl.no })}{mine && <> · {t("d.yourVote", { vote: voteLabel(mine) })}</>}</p>
               {canVote(p, account, council) && (
                 <div className="flex gap-2">
-                  <button className={btn} disabled={busy} onClick={() => run(() => actProposalTx(dao!, p.id, "VoteApprove", p.kind as never))}>A favor</button>
-                  <button className="rounded-md border border-zinc-400 px-3 py-1.5 text-sm" disabled={busy} onClick={() => run(() => actProposalTx(dao!, p.id, "VoteReject", p.kind as never))}>En contra</button>
+                  <button className={btn} disabled={busy} onClick={() => run(() => actProposalTx(dao!, p.id, "VoteApprove", p.kind as never))}>{t("d.voteFor")}</button>
+                  <button className="rounded-md border border-zinc-400 px-3 py-1.5 text-sm" disabled={busy} onClick={() => run(() => actProposalTx(dao!, p.id, "VoteReject", p.kind as never))}>{t("d.voteAgainst")}</button>
                 </div>
               )}
             </div>

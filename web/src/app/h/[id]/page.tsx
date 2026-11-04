@@ -6,13 +6,15 @@ import { loadHouseState } from "@/lib/house-data";
 import { formatCents } from "@/lib/money";
 import { getTokens } from "@/lib/intents";
 import { addChore, addExpense, rollWeek, setNearAccount, toggleChore } from "@/app/actions";
-import Chat from "@/components/Chat";
-import { previousWeek, weekStartUTC } from "@/lib/chores";
 import PayButton, { type TokenOption } from "@/components/PayButton";
 import GuaranteePanel from "@/components/GuaranteePanel";
 import DaoPanel from "@/components/DaoPanel";
+import Chat from "@/components/Chat";
 import { WalletButton, WalletProvider } from "@/components/WalletProvider";
 import { ESCROW_CONTRACT, NEAR_NETWORK } from "@/lib/near";
+import { previousWeek, weekStartUTC } from "@/lib/chores";
+import { getT } from "@/i18n/server";
+import type { Key } from "@/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,7 @@ export default async function HousePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  const t = await getT();
   const { id } = await params;
   const { error } = await searchParams;
   if (!UUID.test(id)) notFound();
@@ -51,7 +54,7 @@ export default async function HousePage({
 
   const { house, members: mems, expenses: exps, payments: pays, balances, debts } = state;
   const name = new Map(mems.map((m) => [m.id, m.displayName]));
-  const money = (c: number) => formatCents(c, house.currency);
+  const money = (c: number) => formatCents(c, house.currency, t.intl);
   const tokens = await loadTokenOptions();
   const allChores = await db.select().from(chores).where(eq(chores.houseId, id));
   const ws = weekStartUTC(new Date());
@@ -73,11 +76,11 @@ export default async function HousePage({
         <div>
           <h1 className="text-3xl font-bold">{house.name}</h1>
           <p className="text-sm text-zinc-500">
-            Hola, {me.displayName} · {mems.length} roomie{mems.length === 1 ? "" : "s"}
+            {t("h.hello", { name: me.displayName })} · {t(mems.length === 1 ? "h.roomies.one" : "h.roomies.other", { n: mems.length })}
           </p>
         </div>
         <p className="rounded-lg bg-zinc-100 px-3 py-1 text-sm dark:bg-zinc-800">
-          Código de invitación: <strong className="font-mono">{house.inviteCode}</strong>
+          {t("h.invite")} <strong className="font-mono">{house.inviteCode}</strong>
         </p>
       </header>
 
@@ -88,33 +91,33 @@ export default async function HousePage({
       )}
 
       <section>
-        <h2 className="mb-2 text-xl font-semibold">Tu cuenta NEAR</h2>
+        <h2 className="mb-2 text-xl font-semibold">{t("h.nearTitle")}</h2>
         <form action={setNearAccount.bind(null, id)} className="flex gap-2">
-          <input name="nearAccount" defaultValue={myAccount ?? ""} placeholder="tunombre.near" required className={input} />
-          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Guardar</button>
+          <input name="nearAccount" defaultValue={myAccount ?? ""} placeholder={t("h.nearPlaceholder")} required className={input} />
+          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">{t("h.save")}</button>
         </form>
-        <p className="mt-1 text-xs text-zinc-500">Ahí recibís USDC cuando te pagan una deuda.</p>
+        <p className="mt-1 text-xs text-zinc-500">{t("h.nearHint")}</p>
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Cuentas</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.accounts")}</h2>
         <ul className="space-y-2">
           {mems.map((m) => {
             const b = balances.get(m.id) ?? 0;
             return (
               <li key={m.id} className="flex justify-between rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
-                <span>{m.displayName}{m.isHost ? " (hospedante)" : ""}</span>
+                <span>{m.displayName}{m.isHost ? t("h.host") : ""}</span>
                 <span className={b > 0 ? "text-emerald-600" : b < 0 ? "text-red-600" : "text-zinc-500"}>
-                  {b > 0 ? `le deben ${money(b)}` : b < 0 ? `debe ${money(-b)}` : "al día"}
+                  {b > 0 ? t("h.owed", { amount: money(b) }) : b < 0 ? t("h.owes", { amount: money(-b) }) : t("h.even")}
                 </span>
               </li>
             );
           })}
         </ul>
 
-        <h3 className="mb-2 mt-5 font-medium">Para quedar a mano</h3>
+        <h3 className="mb-2 mt-5 font-medium">{t("h.settle")}</h3>
         {debts.length === 0 ? (
-          <p className="text-sm text-zinc-500">No hay deudas pendientes.</p>
+          <p className="text-sm text-zinc-500">{t("h.noDebts")}</p>
         ) : (
           <ul className="space-y-2">
             {debts.map((d) => {
@@ -130,7 +133,7 @@ export default async function HousePage({
                   </span>
                   {mine &&
                     (tokens.length === 0 ? (
-                      <span className="text-xs text-zinc-500">No se pudo cargar la lista de activos</span>
+                      <span className="text-xs text-zinc-500">{t("h.tokensFail")}</span>
                     ) : (
                       <PayButton
                         houseId={id}
@@ -150,12 +153,12 @@ export default async function HousePage({
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-semibold">Wallet</h2>
+        <h2 className="text-xl font-semibold">{t("h.walletSection")}</h2>
         <WalletButton />
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Fondo común y votaciones</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.daoSection")}</h2>
         <DaoPanel
           houseId={id}
           houseName={house.name}
@@ -166,7 +169,7 @@ export default async function HousePage({
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Garantías on-chain</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.guaranteeSection")}</h2>
         {ESCROW_CONTRACT ? (
           <GuaranteePanel
             houseId={id}
@@ -175,26 +178,26 @@ export default async function HousePage({
             host={hostMember ? { name: hostMember.displayName, nearAccount: hostMember.nearAccount } : null}
           />
         ) : (
-          <p className="text-sm text-zinc-500">
-            El contrato escrow todavía no está desplegado (falta <code>NEXT_PUBLIC_ESCROW_CONTRACT</code>).
-          </p>
+          <p className="text-sm text-zinc-500">{t("h.escrowMissing")}</p>
         )}
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Tareas de la semana</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.choresTitle")}</h2>
         {weekChores.length === 0 ? (
-          <p className="mb-3 text-sm text-zinc-500">No hay tareas esta semana.</p>
+          <p className="mb-3 text-sm text-zinc-500">{t("h.noChores")}</p>
         ) : (
           <ul className="mb-3 space-y-2">
             {weekChores.map((c) => (
               <li key={c.id} className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
                 <span className={c.done ? "text-zinc-400 line-through" : ""}>
                   {c.title}
-                  <span className="block text-xs text-zinc-500">le toca a {c.assignedTo ? name.get(c.assignedTo) : "nadie"}</span>
+                  <span className="block text-xs text-zinc-500">
+                    {t("h.choreTurn", { name: c.assignedTo ? (name.get(c.assignedTo) ?? "?") : t("h.choreNobody") })}
+                  </span>
                 </span>
                 <form action={toggleChore.bind(null, id, c.id)}>
-                  <button className="rounded-md border border-zinc-400 px-3 py-1 text-sm">{c.done ? "Deshacer" : "Hecha"}</button>
+                  <button className="rounded-md border border-zinc-400 px-3 py-1 text-sm">{c.done ? t("h.undo") : t("h.done")}</button>
                 </form>
               </li>
             ))}
@@ -203,36 +206,35 @@ export default async function HousePage({
         {canRoll && (
           <form action={rollWeek.bind(null, id)} className="mb-3">
             <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-              Pasar a esta semana (rota los turnos)
+              {t("h.roll")}
             </button>
           </form>
         )}
         <form action={addChore.bind(null, id)} className="flex gap-2">
-          <input name="title" placeholder="Nueva tarea (ej: limpiar la cocina)" required maxLength={60} className={input} />
-          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Agregar</button>
+          <input name="title" placeholder={t("h.choreNew")} required maxLength={60} className={input} />
+          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">{t("h.add")}</button>
         </form>
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Chat de la casa</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.chatTitle")}</h2>
         <Chat houseId={id} meId={me.id} names={names} />
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Nuevo gasto</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.newExpense")}</h2>
         <form action={addExpense.bind(null, id)} className="space-y-3">
-          <input name="description" placeholder="Descripción (ej: alquiler noviembre)" required maxLength={120} className={input} />
+          <input name="description" placeholder={t("h.expDesc")} required maxLength={120} className={input} />
           <div className="flex gap-3">
-            <input name="amount" placeholder={`Monto en ${house.currency}`} inputMode="decimal" required className={input} />
+            <input name="amount" placeholder={t("h.expAmount", { currency: house.currency })} inputMode="decimal" required className={input} />
             <select name="category" className={input}>
-              <option value="rent">Alquiler</option>
-              <option value="utilities">Servicios</option>
-              <option value="groceries">Compras</option>
-              <option value="general">Otro</option>
+              {(["rent", "utilities", "groceries", "general"] as const).map((c) => (
+                <option key={c} value={c}>{t(`h.cat.${c}` as Key)}</option>
+              ))}
             </select>
           </div>
           <fieldset>
-            <legend className="mb-1 text-sm text-zinc-500">Se divide entre</legend>
+            <legend className="mb-1 text-sm text-zinc-500">{t("h.splitAmong")}</legend>
             <div className="flex flex-wrap gap-3">
               {mems.map((m) => (
                 <label key={m.id} className="flex items-center gap-2">
@@ -242,22 +244,22 @@ export default async function HousePage({
             </div>
           </fieldset>
           <button className="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">
-            Agregar gasto (lo pagaste vos)
+            {t("h.addExpenseBtn")}
           </button>
         </form>
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Gastos</h2>
+        <h2 className="mb-3 text-xl font-semibold">{t("h.expenses")}</h2>
         {sortedExps.length === 0 ? (
-          <p className="text-sm text-zinc-500">Todavía no hay gastos.</p>
+          <p className="text-sm text-zinc-500">{t("h.noExpenses")}</p>
         ) : (
           <ul className="space-y-2">
             {sortedExps.map((e) => (
               <li key={e.id} className="flex justify-between rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
                 <span>
                   {e.description}
-                  <span className="block text-xs text-zinc-500">pagó {name.get(e.paidBy)}</span>
+                  <span className="block text-xs text-zinc-500">{t("h.paidBy", { name: name.get(e.paidBy) ?? "?" })}</span>
                 </span>
                 <strong>{money(e.amountCents)}</strong>
               </li>
@@ -268,13 +270,13 @@ export default async function HousePage({
 
       {sortedPays.length > 0 && (
         <section>
-          <h2 className="mb-3 text-xl font-semibold">Pagos</h2>
+          <h2 className="mb-3 text-xl font-semibold">{t("h.payments")}</h2>
           <ul className="space-y-2">
             {sortedPays.map((p) => (
               <li key={p.id} className="flex justify-between rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
                 <span>
                   {name.get(p.fromMember)} → {name.get(p.toMember)}
-                  <span className="block text-xs text-zinc-500">{p.status}{p.txHash ? ` · ${p.txHash.slice(0, 12)}…` : ""}</span>
+                  <span className="block text-xs text-zinc-500">{t(`pay.status.${p.status}` as Key)}{p.txHash ? ` · ${p.txHash.slice(0, 12)}…` : ""}</span>
                 </span>
                 <strong>{money(p.amountCents)}</strong>
               </li>

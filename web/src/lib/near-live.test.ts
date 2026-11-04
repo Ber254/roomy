@@ -2,6 +2,7 @@
 // Correr con: NEAR_LIVE=1 npm test   (en entornos con proxy: NODE_USE_ENV_PROXY=1 NEAR_LIVE=1 npm test)
 import { describe, expect, it } from "vitest";
 import { viewAccountBalance, viewCall } from "./near-rpc";
+import { makeT } from "@/i18n";
 import { housePolicy } from "./sputnik";
 import { councilOf, describeKind, tally, type ProposalOut } from "./sputnik-ui";
 
@@ -47,14 +48,14 @@ describe.runIf(process.env.NEAR_LIVE === "1")("NEAR testnet en vivo", { timeout:
     const vote = await orSkip(VOTE_DAO, () => viewCall<ProposalOut[]>(VOTE_DAO, "get_proposals", { from_index: 0, limit: 20 }));
     const voteProp = vote?.find((p) => p.kind === "Vote");
     if (voteProp) {
-      expect(describeKind(voteProp.kind)).toBe("Decisión de la casa");
+      expect(describeKind(voteProp.kind, makeT("es"))).toBe("Decisión de la casa");
       const t = tally(voteProp);
       expect(t.yes + t.no + t.spam).toBeGreaterThan(0);
     }
     const tr = await orSkip(TRANSFER_DAO, () => viewCall<ProposalOut[]>(TRANSFER_DAO, "get_proposals", { from_index: 0, limit: 20 }));
     const trProp = tr?.find((p) => typeof p.kind === "object" && p.kind !== null && "Transfer" in (p.kind as object));
     if (trProp) {
-      expect(describeKind(trProp.kind)).toMatch(/^Pago del fondo: [\d.]+ NEAR a \S+$/);
+      expect(describeKind(trProp.kind, makeT("es"))).toMatch(/^Pago del fondo: [\d.]+ NEAR a \S+$/);
       expect(Object.keys(trProp)).toEqual(expect.arrayContaining(["id", "proposer", "description", "kind", "status", "vote_counts", "votes"]));
     }
   });

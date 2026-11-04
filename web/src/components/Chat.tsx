@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mergeMessages, MAX_MESSAGE_LENGTH, type ChatMessage } from "@/lib/chat";
+import { useI18n } from "@/i18n/client";
 
 const POLL_MS = 3000;
 
 export default function Chat({ houseId, meId, names }: { houseId: string; meId: string; names: Record<string, string> }) {
+  const { t, intl } = useI18n();
   const [msgs, setMsgs] = useState<ChatMessage[] | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,8 @@ export default function Chat({ houseId, meId, names }: { houseId: string; meId: 
   useEffect(() => {
     load();
     // polling simple: pausa mientras la pestaña está oculta
-    const t = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
-    return () => clearInterval(t);
+    const timer = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
+    return () => clearInterval(timer);
   }, [load]);
 
   useEffect(() => { bottom.current?.scrollIntoView({ block: "nearest" }); }, [msgs?.length]);
@@ -64,14 +66,14 @@ export default function Chat({ houseId, meId, names }: { houseId: string; meId: 
   return (
     <div className="space-y-2">
       <div className="h-64 space-y-2 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-800" aria-live="polite">
-        {msgs === null && <p className="text-sm text-zinc-500">Cargando…</p>}
-        {msgs?.length === 0 && <p className="text-sm text-zinc-500">Todavía no hay mensajes. Escribí el primero.</p>}
+        {msgs === null && <p className="text-sm text-zinc-500">{t("c.loading")}</p>}
+        {msgs?.length === 0 && <p className="text-sm text-zinc-500">{t("c.empty")}</p>}
         {msgs?.map((m) => {
           const mine = m.authorId === meId;
           return (
             <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
               <span className="text-xs text-zinc-500">
-                {mine ? "Vos" : names[m.authorId] ?? "?"} · {new Date(m.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                {mine ? t("c.you") : names[m.authorId] ?? "?"} · {new Date(m.createdAt).toLocaleTimeString(intl, { hour: "2-digit", minute: "2-digit" })}
               </span>
               <span className={`max-w-[85%] whitespace-pre-wrap break-words rounded-lg px-3 py-1.5 text-sm ${mine ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800"}`}>
                 {m.body}
@@ -86,11 +88,11 @@ export default function Chat({ houseId, meId, names }: { houseId: string; meId: 
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={MAX_MESSAGE_LENGTH}
-          placeholder="Escribí un mensaje a la casa"
+          placeholder={t("c.placeholder")}
           className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
         />
         <button disabled={sending || !text.trim()} className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-          Enviar
+          {t("c.send")}
         </button>
       </form>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

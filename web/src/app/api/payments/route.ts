@@ -4,6 +4,7 @@ import { db, payments } from "@/db";
 import { getCurrentMember } from "@/lib/session";
 import { loadHouseState } from "@/lib/house-data";
 import { friendlyQuoteError, requestQuote, USDC_NEAR } from "@/lib/intents";
+import { getT } from "@/i18n/server";
 
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
@@ -12,6 +13,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
  * La deuda se recalcula en el servidor: el cliente nunca decide el monto.
  */
 export async function POST(req: Request) {
+  const t = await getT();
   const body = await req.json().catch(() => null);
   const { houseId, toMemberId, originAsset, refundTo, dry } = (body ?? {}) as Record<string, unknown>;
   if (
@@ -19,18 +21,18 @@ export async function POST(req: Request) {
     typeof originAsset !== "string" || typeof refundTo !== "string" || typeof dry !== "boolean" ||
     originAsset.length > 200 || refundTo.length < 2 || refundTo.length > 200
   ) {
-    return bad("Datos inválidos");
+    return bad(t("api.badData"));
   }
 
   const me = await getCurrentMember(houseId);
-  if (!me) return bad("No sos miembro de esta casa", 401);
+  if (!me) return bad(t("api.notMember"), 401);
   const state = await loadHouseState(houseId);
-  if (!state) return bad("Casa no encontrada", 404);
+  if (!state) return bad(t("api.houseNotFound"), 404);
 
   const debt = state.debts.find((d) => d.from === me.id && d.to === toMemberId);
-  if (!debt) return bad("No tenés una deuda pendiente con esa persona");
+  if (!debt) return bad(t("api.noDebt"));
   const to = state.members.find((m) => m.id === toMemberId);
-  if (!to?.nearAccount) return bad(`${to?.displayName ?? "El destinatario"} todavía no configuró su cuenta NEAR`);
+  if (!to?.nearAccount) return bad(t("api.noNearRecipient", { name: to?.displayName ?? t("api.recipientFallback") }));
 
   // Un solo pago abierto por par: evita pagar dos veces la misma deuda.
   if (!dry) {
@@ -58,7 +60,7 @@ export async function POST(req: Request) {
     });
     if (dry) return NextResponse.json({ quote: q.quote });
 
-    if (!q.quote.depositAddress) return bad("1Click no devolvió dirección de depósito", 502);
+    if (!q.quote.depositAddress) return bad(t("api.noDeposit"), 502);
     const [payment] = await db
       .insert(payments)
       .values({
@@ -76,6 +78,6 @@ export async function POST(req: Request) {
       .returning();
     return NextResponse.json({ payment });
   } catch (e) {
-    return bad(friendlyQuoteError(e instanceof Error ? e.message : "Error al cotizar"), 502);
+    return bad(friendlyQuoteError(e instanceof Error ? e.message : t("api.quoteError"), t), 502);
   }
 }

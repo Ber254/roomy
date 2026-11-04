@@ -2,6 +2,8 @@
 // Esquema verificado contra https://1click.chaindefuser.com/docs/v0/openapi.yaml
 // No existe testnet de Intents: se usa `dry: true` para cotizar sin mover fondos.
 
+import type { TFn } from "@/i18n";
+
 const BASE = process.env.ONECLICK_API_URL ?? "https://1click.chaindefuser.com";
 
 /** USDC nativo en NEAR: activo de liquidación de Roomy. 6 decimales. */
@@ -128,12 +130,9 @@ export const isFinal = (s: SwapStatus) =>
  * 1Click responde 400 "Internal server error" ante datos que no puede resolver (cuenta de destino
  * inexistente, activo y dirección de reembolso de redes distintas). Se traduce a algo accionable.
  */
-export function friendlyQuoteError(message: string): string {
-  if (/Internal server error/i.test(message)) {
-    return "No se pudo cotizar. Revisá que la cuenta NEAR del destinatario exista y que tu dirección de reembolso corresponda a la red del activo elegido.";
-  }
-  if (/amount.*(too low|minimum)|below.*minimum/i.test(message)) {
-    return "El monto es menor al mínimo que acepta NEAR Intents para ese activo.";
-  }
+export function friendlyQuoteError(message: string, t: TFn): string {
+  if (/Internal server error/i.test(message)) return t("q.cantQuote");
+  if (/refundTo is not valid/i.test(message)) return t("q.badRefund");
+  if (/amount.*(too low|minimum)|below.*minimum/i.test(message)) return t("q.minAmount");
   return message;
 }

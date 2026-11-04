@@ -120,3 +120,13 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - **Depósito de creación del DAO verificado indirectamente:** los DAOs reales en testnet ocupan ~543 KB (~5.4 NEAR de almacenamiento bloqueado; el código del repo del factory usa contratos globales con mínimo de 0.01 NEAR, pero el factory desplegado en testnet no lo hace). Mínimo práctico ~5.5 NEAR; el default de 6 queda justificado. Ya no es "a confirmar", pero la creación real aún no se ejecutó.
 - Nombres sugeridos disponibles en testnet: `roomy-escrow-bernardo`, `roomy-hugo-bernardo`, `roomy-ana-bernardo` (`.testnet`).
 - **Siguen sin verificar:** firma con wallet real, ejecución de `create` del DAO, despliegue del escrow y su ciclo, pago real por Intents.
+
+### 2026-11-04 (día 2, noche VI) — idioma, tema claro pastel y validaciones
+- **Idioma ES/EN** en toda la app (landing, panel de la casa, componentes on-chain, errores de acciones y de la API, formato de moneda y fechas). Diccionarios tipados (`web/src/i18n`): si falta una clave en un idioma, no compila; hay pruebas de que ambos tienen las mismas claves y los mismos `{parámetros}`. Idioma por defecto: cookie > `Accept-Language` (es* -> español, otro -> inglés) > español.
+- **Tema claro en tonos pastel** (lavanda/menta, contrastes WCAG verificados) y tema oscuro; botón en la barra superior, persiste. Sigue el tema del sistema hasta que la persona elige.
+- Título de la landing: "Compartir un piso sin discutir. ¡Organizate!" (EN: "Share your place without arguing. Get organized!").
+- Corregido: la pestaña decía "Create Next App" y `lang="en"`. Ahora hay metadatos reales (título, descripción, Open Graph) por idioma.
+- Verificación: 63 chequeos de punta a punta (incluye idioma, formato de montos, cookie, errores de API en inglés, tema) y 57 pruebas unitarias.
+- **Validación de tracks** con las reglas oficiales: ids `realworld`, `social`, `open` son válidos. Encaje: Open Innovation seguro; Real-World Money parcial (pide "empresas reales"); Social Money depende de que el DAO funcione (condición de salida 9-nov).
+- **Validación on-chain, estado:** (1) cotización real de 1Click verificada (HTTP 201, dirección, firma, plazo; estado `PENDING_DEPOSIT`); falta el depósito real. (2) escrow y (3) DAO: pendientes de correr en testnet; el servicio de cuentas gratuitas de testnet es `helper.nearprotocol.com` (según el código de near-cli-rs), pendiente de permitir en la red del entorno.
+- 1Click rechaza algunas direcciones de reembolso con `refundTo is not valid`: ahora se traduce a un mensaje amigable.

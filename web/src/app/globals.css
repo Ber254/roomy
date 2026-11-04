@@ -1,9 +1,7 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* El modo oscuro se activa con data-theme="dark" en <html> (lo gestiona next-themes), no con la preferencia del sistema. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -12,15 +10,53 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ---------- Tema claro: tonos pastel (por defecto) ---------- */
+html:not([data-theme="dark"]) {
+  color-scheme: light;
+  --background: #fbf8ff;
+  --foreground: #3b3550;
+
+  /* Se remapean los grises y verdes de Tailwind a una paleta pastel lavanda/menta.
+     Contrastes verificados (WCAG): texto #3b3550 sobre el fondo ≈ 10:1, texto suave ≈ 5.3:1,
+     botón #278068 con texto blanco ≈ 4.8:1. */
+  --color-zinc-100: #efe9fb;
+  --color-zinc-200: #e3daf6;
+  --color-zinc-300: #d3c7f0;
+  --color-zinc-400: #9a92b5;
+  --color-zinc-500: #675f82;
+  --color-zinc-600: #5a5373;
+  --color-zinc-900: #3b3550;
+  --color-emerald-500: #4aa58c;
+  --color-emerald-600: #278068;
+  --color-emerald-700: #1f6b58;
+  --color-red-600: #c93a3a;
+}
+
+/* El degradado va en una capa fija detrás del contenido: `background-attachment: fixed` no funciona en iOS Safari. */
+html:not([data-theme="dark"]) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #fff1f5 0%, #f4efff 48%, #e9fbf3 100%);
+}
+
+/* Las tarjetas (las que tienen borde suave) se vuelven translúcidas, con una sombra tenue. */
+html:not([data-theme="dark"]) .border-zinc-200 {
+  background-color: rgb(255 255 255 / 0.65);
+  box-shadow: 0 1px 2px rgb(91 74 140 / 0.06), 0 8px 24px -10px rgb(91 74 140 / 0.18);
+}
+
+/* ---------- Tema oscuro ---------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100vh;
 }

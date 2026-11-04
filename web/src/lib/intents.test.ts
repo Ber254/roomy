@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { makeT } from "@/i18n";
 import { centsToUsdcUnits, friendlyQuoteError, getStatus, isFinal, requestQuote, USDC_NEAR } from "./intents";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -70,9 +71,11 @@ describe("status", () => {
 
 describe("friendlyQuoteError", () => {
   it("traduce el error genérico de 1Click a algo accionable", () => {
-    expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"Internal server error"}')).toMatch(/cuenta NEAR del destinatario/);
-    expect(friendlyQuoteError("Amount is too low")).toMatch(/mínimo/);
-    expect(friendlyQuoteError("otro error")).toBe("otro error");
+    expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"Internal server error"}', makeT("es"))).toMatch(/cuenta NEAR del destinatario/);
+    expect(friendlyQuoteError("Amount is too low", makeT("es"))).toMatch(/mínimo/);
+    expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"refundTo is not valid"}', makeT("es"))).toMatch(/dirección de reembolso/);
+    expect(friendlyQuoteError("otro error", makeT("es"))).toBe("otro error");
+    expect(friendlyQuoteError("Internal server error", makeT("en"))).toMatch(/recipient's NEAR account/);
   });
 });
 

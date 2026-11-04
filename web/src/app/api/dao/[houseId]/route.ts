@@ -4,18 +4,20 @@ import { db, houses } from "@/db";
 import { getCurrentMember } from "@/lib/session";
 import { viewAccountBalance, viewCall } from "@/lib/near-rpc";
 import { councilOf, type ProposalOut } from "@/lib/sputnik-ui";
+import { getT } from "@/i18n/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const RECENT = 20;
 
 /** Fondo, consejo y propuestas recientes del DAO de la casa (la cadena es la fuente de verdad). */
 export async function GET(_: Request, { params }: { params: Promise<{ houseId: string }> }) {
+  const t = await getT();
   const { houseId } = await params;
-  if (!UUID.test(houseId)) return NextResponse.json({ error: "Id inválido" }, { status: 400 });
-  if (!(await getCurrentMember(houseId))) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  if (!UUID.test(houseId)) return NextResponse.json({ error: t("api.badId") }, { status: 400 });
+  if (!(await getCurrentMember(houseId))) return NextResponse.json({ error: t("api.unauth") }, { status: 401 });
 
   const [house] = await db.select({ dao: houses.daoAccount }).from(houses).where(eq(houses.id, houseId));
-  if (!house) return NextResponse.json({ error: "Casa no encontrada" }, { status: 404 });
+  if (!house) return NextResponse.json({ error: t("api.houseNotFound") }, { status: 404 });
   if (!house.dao) return NextResponse.json({ dao: null });
 
   try {
@@ -34,6 +36,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ houseId: s
       proposals: proposals.filter((p) => p.status !== "Removed").reverse(), // más nuevas primero
     });
   } catch (e) {
-    return NextResponse.json({ dao: house.dao, error: e instanceof Error ? e.message : "Error de RPC" }, { status: 502 });
+    return NextResponse.json({ dao: house.dao, error: e instanceof Error ? e.message : t("api.rpcError") }, { status: 502 });
   }
 }
