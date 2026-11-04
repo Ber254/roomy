@@ -8,6 +8,13 @@
       "when": 1793720712769,
       "tag": "0000_cool_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793797531629,
+      "tag": "0001_slippery_the_fury",
+      "breakpoints": true
     }
   ]
 }

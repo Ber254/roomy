@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   pgEnum,
+  jsonb,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
@@ -110,6 +111,11 @@ export const payments = pgTable(
     depositAddress: text("deposit_address"),
     intentsStatus: text("intents_status"),
     txHash: text("tx_hash"),
+    originSymbol: text("origin_symbol"),
+    refundTo: text("refund_to"),
+    // respuesta completa de 1Click (incluye la firma): se conserva para resolver disputas
+    quote: jsonb("quote"),
+    deadline: timestamp("deadline"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     settledAt: timestamp("settled_at"),
   },

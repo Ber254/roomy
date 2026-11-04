@@ -15,7 +15,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Contrato escrow (Rust) | ✅ | 7 tests; no desplegado todavía |
 | Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
 | UI: casas, invitaciones, gastos | 🟡 | Escrita (inicio, panel de casa, acciones). Compila y pasa lint, **sin probar contra la base**: falta probarla en local |
-| UI: pagar con Intents | ⬜ | Siguiente: botón "Pagar" (quote → depósito → polling de status) |
+| UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | ⬜ | |
 | Chat (polling), tareas | ⬜ | |
 | Votación, calendario | ⬜ | Mockup / solo si hay tiempo |
@@ -69,3 +69,5 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Spike de 1Click OK: `POST /v0/quote` con `dry: true`, HTTP 201. 1 USDC (Base) -> 0.994796 USDC (NEAR) en `hakaroomy.near`, ETA 35 s. Con `EXACT_OUTPUT`, para entregar 1.000000 USDC el pagador deposita 1.015222 (el excedente se reembolsa).
 - `web/src/lib/intents.ts` + tests. Nota: en el sandbox, el `fetch` de Node necesita `NODE_USE_ENV_PROXY=1` para las pruebas en vivo (`INTENTS_LIVE=1`); en una máquina normal no.
 - Pendiente de decidir: el pago real de ~US$1 en mainnet requiere fondos y firma del usuario (no se hace sin confirmación explícita).
+- Botón "Pagar con NEAR": `POST /api/payments` (cotiza dry o crea el pago; la deuda se recalcula en el servidor), `GET /api/payments/[id]/status` (sincroniza con 1Click), `PayButton` en el panel y formulario de cuenta NEAR por roomie.
+- Migración `0001` agrega `quote`, `deadline`, `origin_symbol`, `refund_to` a `payments`: **hay que correr `npm run db:push` de nuevo.**

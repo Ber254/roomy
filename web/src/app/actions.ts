@@ -7,6 +7,7 @@ import { db, houses, members, expenses, expenseSplits } from "@/db";
 import { getCurrentMember, setMemberCookie } from "@/lib/session";
 import { parseAmountToCents } from "@/lib/money";
 import { splitEvenly } from "@/lib/balances";
+import { isNearAccount } from "@/lib/payments";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin 0/O/1/I
 const inviteCode = () =>
@@ -88,5 +89,15 @@ export async function addExpense(houseId: string, fd: FormData) {
       splits.map((s) => ({ expenseId, memberId: s.memberId, shareCents: s.shareCents })),
     ),
   ]);
+  redirect(path);
+}
+
+export async function setNearAccount(houseId: string, fd: FormData) {
+  const me = await getCurrentMember(houseId);
+  if (!me) redirect("/");
+  const path = `/h/${houseId}`;
+  const account = text(fd, "nearAccount", 64).toLowerCase();
+  if (!isNearAccount(account)) fail(path, "Cuenta NEAR inválida (ej: ana.near)");
+  await db.update(members).set({ nearAccount: account }).where(eq(members.id, me!.id));
   redirect(path);
 }

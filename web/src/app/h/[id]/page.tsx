@@ -1,16 +1,29 @@
-import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import { db, houses, members, expenses, expenseSplits, payments } from "@/db";
 import { getCurrentMember } from "@/lib/session";
-import { netBalances, simplifyDebts } from "@/lib/balances";
+import { loadHouseState } from "@/lib/house-data";
 import { formatCents } from "@/lib/money";
-import { addExpense } from "@/app/actions";
+import { getTokens } from "@/lib/intents";
+import { addExpense, setNearAccount } from "@/app/actions";
+import PayButton, { type TokenOption } from "@/components/PayButton";
 
 export const dynamic = "force-dynamic";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const input =
   "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+
+// Activos con los que un roomie puede pagar: stablecoins en cualquier red y wNEAR.
+async function loadTokenOptions(): Promise<TokenOption[]> {
+  try {
+    const all = await getTokens();
+    return all
+      .filter((t) => ["USDC", "USDT"].includes(t.symbol) || (t.symbol === "wNEAR" && t.blockchain === "near"))
+      .map((t) => ({ assetId: t.assetId, label: `${t.symbol} · ${t.blockchain}` }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  } catch {
+    return [];
+  }
+}
 
 export default async function HousePage({
   params,
@@ -23,41 +36,18 @@ export default async function HousePage({
   const { error } = await searchParams;
   if (!UUID.test(id)) notFound();
 
-  const [house] = await db.select().from(houses).where(eq(houses.id, id));
-  if (!house) notFound();
-
+  const state = await loadHouseState(id);
+  if (!state) notFound();
   const me = await getCurrentMember(id);
   if (!me) redirect("/"); // sin cookie de miembro: debe unirse con el código
 
-  const [mems, exps, splits, pays] = await Promise.all([
-    db.select().from(members).where(eq(members.houseId, id)),
-    db.select().from(expenses).where(eq(expenses.houseId, id)),
-    db
-      .select({ s: expenseSplits })
-      .from(expenseSplits)
-      .innerJoin(expenses, eq(expenseSplits.expenseId, expenses.id))
-      .where(eq(expenses.houseId, id)),
-    db.select().from(payments).where(eq(payments.houseId, id)),
-  ]);
-
+  const { house, members: mems, expenses: exps, payments: pays, balances, debts } = state;
   const name = new Map(mems.map((m) => [m.id, m.displayName]));
   const money = (c: number) => formatCents(c, house.currency);
-
-  const balances = netBalances(
-    mems.map((m) => m.id),
-    exps.map((e) => ({
-      paidBy: e.paidBy,
-      amountCents: e.amountCents,
-      splits: splits
-        .filter((x) => x.s.expenseId === e.id)
-        .map((x) => ({ memberId: x.s.memberId, shareCents: x.s.shareCents })),
-    })),
-    pays
-      .filter((p) => p.status === "settled")
-      .map((p) => ({ fromMember: p.fromMember, toMember: p.toMember, amountCents: p.amountCents })),
-  );
-  const debts = simplifyDebts(balances);
+  const tokens = await loadTokenOptions();
   const sortedExps = [...exps].sort((a, b) => +b.createdAt - +a.createdAt);
+  const sortedPays = [...pays].sort((a, b) => +b.createdAt - +a.createdAt);
+  const myAccount = mems.find((m) => m.id === me.id)?.nearAccount;
 
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-4 py-8">
@@ -80,6 +70,15 @@ export default async function HousePage({
       )}
 
       <section>
+        <h2 className="mb-2 text-xl font-semibold">Tu cuenta NEAR</h2>
+        <form action={setNearAccount.bind(null, id)} className="flex gap-2">
+          <input name="nearAccount" defaultValue={myAccount ?? ""} placeholder="tunombre.near" required className={input} />
+          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Guardar</button>
+        </form>
+        <p className="mt-1 text-xs text-zinc-500">Ahí recibís USDC cuando te pagan una deuda.</p>
+      </section>
+
+      <section>
         <h2 className="mb-3 text-xl font-semibold">Cuentas</h2>
         <ul className="space-y-2">
           {mems.map((m) => {
@@ -100,17 +99,34 @@ export default async function HousePage({
           <p className="text-sm text-zinc-500">No hay deudas pendientes.</p>
         ) : (
           <ul className="space-y-2">
-            {debts.map((d) => (
-              <li key={`${d.from}-${d.to}`} className="flex items-center justify-between gap-3 rounded-lg bg-zinc-100 px-3 py-2 dark:bg-zinc-800">
-                <span>
-                  {name.get(d.from)} → {name.get(d.to)}: <strong>{money(d.amountCents)}</strong>
-                </span>
-                {/* Se conecta con NEAR Intents cuando esté el cliente de pagos */}
-                <button disabled title="Próximamente: pago con NEAR Intents" className="rounded-md bg-emerald-600 px-3 py-1 text-sm text-white opacity-50">
-                  Pagar con NEAR
-                </button>
-              </li>
-            ))}
+            {debts.map((d) => {
+              const to = mems.find((m) => m.id === d.to)!;
+              const mine = d.from === me.id;
+              const open = pays.find(
+                (p) => p.fromMember === d.from && p.toMember === d.to && ["pending", "processing"].includes(p.status),
+              );
+              return (
+                <li key={`${d.from}-${d.to}`} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-zinc-100 px-3 py-2 dark:bg-zinc-800">
+                  <span>
+                    {name.get(d.from)} → {name.get(d.to)}: <strong>{money(d.amountCents)}</strong>
+                  </span>
+                  {mine &&
+                    (tokens.length === 0 ? (
+                      <span className="text-xs text-zinc-500">No se pudo cargar la lista de activos</span>
+                    ) : (
+                      <PayButton
+                        houseId={id}
+                        toMemberId={d.to}
+                        toName={to.displayName}
+                        amountLabel={money(d.amountCents)}
+                        tokens={tokens}
+                        toHasNear={!!to.nearAccount}
+                        existing={open ? JSON.parse(JSON.stringify(open)) : null}
+                      />
+                    ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -162,6 +178,23 @@ export default async function HousePage({
           </ul>
         )}
       </section>
+
+      {sortedPays.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-xl font-semibold">Pagos</h2>
+          <ul className="space-y-2">
+            {sortedPays.map((p) => (
+              <li key={p.id} className="flex justify-between rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
+                <span>
+                  {name.get(p.fromMember)} → {name.get(p.toMember)}
+                  <span className="block text-xs text-zinc-500">{p.status}{p.txHash ? ` · ${p.txHash.slice(0, 12)}…` : ""}</span>
+                </span>
+                <strong>{money(p.amountCents)}</strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }
