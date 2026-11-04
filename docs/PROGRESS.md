@@ -14,11 +14,11 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Lógica de balances + tests | ✅ | `web/src/lib/balances.ts` |
 | Contrato escrow (Rust) | ✅ | Reescrito con el modelo de Safexy: acuerdo entre partes, parciales, fee 0.05%. 24 tests; **no desplegado**. Ver `docs/ESCROW.md` |
 | Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
-| UI: casas, invitaciones, gastos | 🟡 | Escrita (inicio, panel de casa, acciones). Compila y pasa lint, **sin probar contra la base**: falta probarla en local |
+| UI: casas, invitaciones, gastos | ✅ | Verificado de punta a punta contra Postgres real |
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
-| Chat (polling) | 🟡 | `Chat` + `GET/POST /api/messages`. UI verificada en navegador con API simulada (9 chequeos). **Rutas sin probar contra la base** |
-| Tareas con turnos | 🟡 | Acciones `addChore`/`toggleChore`/`rollWeek` y lógica de rotación con tests. **Sin probar contra la base** |
+| Chat (polling) | ✅ | Verificado de punta a punta contra Postgres real (ver `tools/e2e`) |
+| Tareas con turnos | ✅ | Verificado de punta a punta contra Postgres real (asignación, permisos, rotación) |
 | Votación y fondo común (Sputnik DAO) | 🟡 | UI completa: crear DAO, aportar, proponer decisión/pago/sumar roomie, votar. Verificada en navegador con wallet simulada (19 chequeos). **Sin probar en testnet con wallet real** (condición de salida: 9-nov) |
 | Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
@@ -103,3 +103,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Chat de la casa: polling cada 3 s (pausa con la pestaña oculta), sin duplicados, solo pide lo posterior al último mensaje. Límite de 1000 caracteres.
 - Tareas con turnos: asignación en orden, rotación semanal al siguiente roomie, solo quien la tiene o el hospedante la marca. Semanas desde el lunes 00:00 UTC.
 - 46 tests unitarios. **Pendiente de probar contra Neon:** las rutas y acciones de chat y tareas (solo la lógica pura y la UI están verificadas). RPC de NEAR sigue bloqueado: no se avanzó con el despliegue del escrow.
+
+### 2026-11-04 (día 2, noche IV) — base local y prueba de punta a punta
+- `tools/local-db`: proxy que habla el protocolo HTTP de Neon contra cualquier Postgres (probado con Postgres 16 local). La app lo usa solo si existe `NEON_FETCH_ENDPOINT`; sin esa variable usa Neon como siempre. Batch atómico verificado (rollback ante error).
+- `tools/e2e/e2e.js`: 3 usuarios en navegadores distintos contra el build de producción y Postgres real. **55 verificaciones, todas pasan**: crear casa, unirse con código (y código inválido), gastos y splits exactos, deudas simplificadas, validaciones, aislamiento sin sesión (401), cuenta NEAR, cotización `dry` real de 1Click, un solo pago abierto por par, liquidación que baja la deuda, chat por polling entre dos usuarios, límites del chat, HTML mostrado como texto (sin XSS), tareas con permisos y rotación semanal, rutas de DAO y garantías con RPC caído (502 controlado, sin crash).
+- Bug encontrado y corregido: si 1Click no puede resolver los datos (por ejemplo, cuenta NEAR de destino inexistente) responde `400 Internal server error`, que llegaba tal cual al usuario. Ahora se traduce a un mensaje accionable (`friendlyQuoteError`).
+- **Límites de esta verificación:** la cotización real (no `dry`) solo corre con `E2E_REAL_QUOTE=1`; el depósito, la firma con wallet, el RPC de NEAR y el DAO/escrow en red siguen sin probar. Dos fallos intermedios de la prueba eran de la propia prueba (expresión demasiado laxa y lectura antes del render), no de la app.

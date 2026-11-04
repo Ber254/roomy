@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, payments } from "@/db";
 import { getCurrentMember } from "@/lib/session";
 import { loadHouseState } from "@/lib/house-data";
-import { requestQuote, USDC_NEAR } from "@/lib/intents";
+import { friendlyQuoteError, requestQuote, USDC_NEAR } from "@/lib/intents";
 
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
@@ -76,6 +76,6 @@ export async function POST(req: Request) {
       .returning();
     return NextResponse.json({ payment });
   } catch (e) {
-    return bad(e instanceof Error ? e.message : "Error al cotizar", 502);
+    return bad(friendlyQuoteError(e instanceof Error ? e.message : "Error al cotizar"), 502);
   }
 }

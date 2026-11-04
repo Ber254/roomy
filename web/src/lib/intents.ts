@@ -123,3 +123,17 @@ export function getStatus(depositAddress: string, depositMemo?: string) {
 /** Estados finales: no hace falta seguir consultando. */
 export const isFinal = (s: SwapStatus) =>
   s === "SUCCESS" || s === "REFUNDED" || s === "FAILED";
+
+/**
+ * 1Click responde 400 "Internal server error" ante datos que no puede resolver (cuenta de destino
+ * inexistente, activo y dirección de reembolso de redes distintas). Se traduce a algo accionable.
+ */
+export function friendlyQuoteError(message: string): string {
+  if (/Internal server error/i.test(message)) {
+    return "No se pudo cotizar. Revisá que la cuenta NEAR del destinatario exista y que tu dirección de reembolso corresponda a la red del activo elegido.";
+  }
+  if (/amount.*(too low|minimum)|below.*minimum/i.test(message)) {
+    return "El monto es menor al mínimo que acepta NEAR Intents para ese activo.";
+  }
+  return message;
+}

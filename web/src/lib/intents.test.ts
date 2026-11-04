@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { centsToUsdcUnits, getStatus, isFinal, requestQuote, USDC_NEAR } from "./intents";
+import { centsToUsdcUnits, friendlyQuoteError, getStatus, isFinal, requestQuote, USDC_NEAR } from "./intents";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -65,6 +65,14 @@ describe("status", () => {
     expect(isFinal("SUCCESS")).toBe(true);
     expect(isFinal("REFUNDED")).toBe(true);
     expect(isFinal("PROCESSING")).toBe(false);
+  });
+});
+
+describe("friendlyQuoteError", () => {
+  it("traduce el error genérico de 1Click a algo accionable", () => {
+    expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"Internal server error"}')).toMatch(/cuenta NEAR del destinatario/);
+    expect(friendlyQuoteError("Amount is too low")).toMatch(/mínimo/);
+    expect(friendlyQuoteError("otro error")).toBe("otro error");
   });
 });
 

@@ -1,0 +1,8 @@
+{
+  "name": "roomy-local-db",
+  "private": true,
+  "type": "module",
+  "description": "Proxy local que habla el protocolo HTTP de Neon contra un Postgres cualquiera. Solo para pruebas.",
+  "scripts": { "start": "node proxy.mjs" },
+  "dependencies": { "pg": "^8.13.0" }
+}
