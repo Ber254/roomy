@@ -17,7 +17,8 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | UI: casas, invitaciones, gastos | 🟡 | Escrita (inicio, panel de casa, acciones). Compila y pasa lint, **sin probar contra la base**: falta probarla en local |
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
-| Chat (polling), tareas | ⬜ | |
+| Chat (polling) | 🟡 | `Chat` + `GET/POST /api/messages`. UI verificada en navegador con API simulada (9 chequeos). **Rutas sin probar contra la base** |
+| Tareas con turnos | 🟡 | Acciones `addChore`/`toggleChore`/`rollWeek` y lógica de rotación con tests. **Sin probar contra la base** |
 | Votación y fondo común (Sputnik DAO) | 🟡 | UI completa: crear DAO, aportar, proponer decisión/pago/sumar roomie, votar. Verificada en navegador con wallet simulada (19 chequeos). **Sin probar en testnet con wallet real** (condición de salida: 9-nov) |
 | Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
@@ -96,3 +97,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Verificado en Chromium con una wallet simulada que captura las transacciones: 19 chequeos del DAO y 5 de garantías (tx correctas, bloqueos de quien ya votó, quien no está en el consejo y quien propone). Los scripts de prueba no están en el repo.
 - Migración `0002` agrega `houses.dao_account`: **hay que correr `npm run db:push`.**
 - **No verificado:** firma con wallet real, el depósito de creación del DAO (parámetro `NEXT_PUBLIC_DAO_CREATE_DEPOSIT_NEAR`, default 6, a confirmar en testnet), lectura real por RPC.
+
+### 2026-11-04 (día 2, noche III)
+- Migración `0002` aplicada por el usuario en Neon (`dao_account`).
+- Chat de la casa: polling cada 3 s (pausa con la pestaña oculta), sin duplicados, solo pide lo posterior al último mensaje. Límite de 1000 caracteres.
+- Tareas con turnos: asignación en orden, rotación semanal al siguiente roomie, solo quien la tiene o el hospedante la marca. Semanas desde el lunes 00:00 UTC.
+- 46 tests unitarios. **Pendiente de probar contra Neon:** las rutas y acciones de chat y tareas (solo la lógica pura y la UI están verificadas). RPC de NEAR sigue bloqueado: no se avanzó con el despliegue del escrow.

@@ -1,9 +1,13 @@
+import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
+import { db, chores } from "@/db";
 import { getCurrentMember } from "@/lib/session";
 import { loadHouseState } from "@/lib/house-data";
 import { formatCents } from "@/lib/money";
 import { getTokens } from "@/lib/intents";
-import { addExpense, setNearAccount } from "@/app/actions";
+import { addChore, addExpense, rollWeek, setNearAccount, toggleChore } from "@/app/actions";
+import Chat from "@/components/Chat";
+import { previousWeek, weekStartUTC } from "@/lib/chores";
 import PayButton, { type TokenOption } from "@/components/PayButton";
 import GuaranteePanel from "@/components/GuaranteePanel";
 import DaoPanel from "@/components/DaoPanel";
@@ -49,6 +53,11 @@ export default async function HousePage({
   const name = new Map(mems.map((m) => [m.id, m.displayName]));
   const money = (c: number) => formatCents(c, house.currency);
   const tokens = await loadTokenOptions();
+  const allChores = await db.select().from(chores).where(eq(chores.houseId, id));
+  const ws = weekStartUTC(new Date());
+  const weekChores = allChores.filter((c) => +c.weekStart === +ws);
+  const canRoll = weekChores.length === 0 && allChores.some((c) => +c.weekStart === +previousWeek(ws));
+  const names = Object.fromEntries(mems.map((m) => [m.id, m.displayName]));
   const sortedExps = [...exps].sort((a, b) => +b.createdAt - +a.createdAt);
   const sortedPays = [...pays].sort((a, b) => +b.createdAt - +a.createdAt);
   const myAccount = mems.find((m) => m.id === me.id)?.nearAccount;
@@ -170,6 +179,43 @@ export default async function HousePage({
             El contrato escrow todavía no está desplegado (falta <code>NEXT_PUBLIC_ESCROW_CONTRACT</code>).
           </p>
         )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-xl font-semibold">Tareas de la semana</h2>
+        {weekChores.length === 0 ? (
+          <p className="mb-3 text-sm text-zinc-500">No hay tareas esta semana.</p>
+        ) : (
+          <ul className="mb-3 space-y-2">
+            {weekChores.map((c) => (
+              <li key={c.id} className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
+                <span className={c.done ? "text-zinc-400 line-through" : ""}>
+                  {c.title}
+                  <span className="block text-xs text-zinc-500">le toca a {c.assignedTo ? name.get(c.assignedTo) : "nadie"}</span>
+                </span>
+                <form action={toggleChore.bind(null, id, c.id)}>
+                  <button className="rounded-md border border-zinc-400 px-3 py-1 text-sm">{c.done ? "Deshacer" : "Hecha"}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        {canRoll && (
+          <form action={rollWeek.bind(null, id)} className="mb-3">
+            <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+              Pasar a esta semana (rota los turnos)
+            </button>
+          </form>
+        )}
+        <form action={addChore.bind(null, id)} className="flex gap-2">
+          <input name="title" placeholder="Nueva tarea (ej: limpiar la cocina)" required maxLength={60} className={input} />
+          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Agregar</button>
+        </form>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-xl font-semibold">Chat de la casa</h2>
+        <Chat houseId={id} meId={me.id} names={names} />
       </section>
 
       <section>
