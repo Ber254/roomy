@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { contractCall, guaranteeId, nearToYocto, yoctoToNear } from "./near";
+import { contractCall, guaranteeId, nearToYocto, transferTx, yoctoToNear } from "./near";
 import { viewCall } from "./near-rpc";
 
 describe("nearToYocto / yoctoToNear", () => {
@@ -29,6 +29,12 @@ describe("contractCall", () => {
     expect(tx.actions[0]).toEqual({
       type: "FunctionCall",
       params: { methodName: "fund_guarantee", args: { id: "x" }, gas: "30000000000000", deposit: "5" },
+    });
+  });
+  it("transferencia simple al fondo", () => {
+    expect(transferTx("casa.sputnikv2.testnet", "7")).toEqual({
+      receiverId: "casa.sputnikv2.testnet",
+      actions: [{ type: "Transfer", params: { deposit: "7" } }],
     });
   });
   it("id de garantía determinista", () => {

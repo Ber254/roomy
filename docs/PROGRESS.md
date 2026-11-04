@@ -18,7 +18,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling), tareas | ⬜ | |
-| Votación y fondo común (Sputnik DAO) | 🟡 | Constructores de transacciones y política listos (`web/src/lib/sputnik.ts`, 8 tests). Falta UI, DB (`houses.dao_account`) y prueba en testnet |
+| Votación y fondo común (Sputnik DAO) | 🟡 | UI completa: crear DAO, aportar, proponer decisión/pago/sumar roomie, votar. Verificada en navegador con wallet simulada (19 chequeos). **Sin probar en testnet con wallet real** (condición de salida: 9-nov) |
 | Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
 | README final, video, post en X, entrega | ⬜ | |
@@ -89,3 +89,10 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Leído el código de `near-daos/sputnik-dao-contract`: existen `Vote` (señalización sin ejecución), `Transfer`, `AddMemberToRole`; `act_proposal` exige reenviar el `kind`; el bond por defecto es 1 NEAR (usamos 0.1 NEAR con política propia).
 - `web/src/lib/sputnik.ts`: política de casa, crear DAO vía factory, proponer, votar. **Sin probar en red.** El depósito de creación del DAO es un parámetro a confirmar en testnet (no verificado).
 - Siguiente: columna `houses.dao_account`, UI de votación y fondo común, cuenta testnet del usuario, despliegue del escrow en testnet.
+
+### 2026-11-04 (día 2, noche II)
+- UI de votación y fondo común: `DaoPanel` (crear DAO vía factory, aporte al fondo, propuestas `Vote`/`Transfer`/`AddMemberToRole`, votar a favor o en contra), `WalletProvider` compartido con `GuaranteePanel`, rutas `POST /api/dao` y `GET /api/dao/[houseId]`.
+- Seguridad: solo el hospedante registra el DAO, una sola vez, y solo si existe on-chain, es subcuenta del factory y su consejo lo incluye. El bond de cada propuesta se lee de la política del DAO (el contrato exige el monto exacto).
+- Verificado en Chromium con una wallet simulada que captura las transacciones: 19 chequeos del DAO y 5 de garantías (tx correctas, bloqueos de quien ya votó, quien no está en el consejo y quien propone). Los scripts de prueba no están en el repo.
+- Migración `0002` agrega `houses.dao_account`: **hay que correr `npm run db:push`.**
+- **No verificado:** firma con wallet real, el depósito de creación del DAO (parámetro `NEXT_PUBLIC_DAO_CREATE_DEPOSIT_NEAR`, default 6, a confirmar en testnet), lectura real por RPC.

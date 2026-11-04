@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { NearConnector } from "@hot-labs/near-connect";
-import { contractCall, guaranteeId, GAS_PAYOUT, nearToYocto, yoctoToNear, type NearNetwork } from "@/lib/near";
+import { useCallback, useEffect, useState } from "react";
+import { contractCall, guaranteeId, GAS_PAYOUT, nearToYocto, yoctoToNear, type Tx } from "@/lib/near";
+import { useWallet } from "./WalletProvider";
 
 type Tenant = { memberId: string; name: string; nearAccount: string | null };
 type G = {
@@ -20,60 +20,27 @@ const STATUS_ES = { Pending: "pendiente de fondeo", Active: "activa", Closed: "c
 export default function GuaranteePanel(props: {
   houseId: string;
   escrow: string;
-  network: NearNetwork;
   tenants: Tenant[];
   host: { name: string; nearAccount: string | null } | null;
 }) {
-  const { houseId, escrow, network, tenants, host } = props;
-  const connectorRef = useRef<NearConnector | null>(null);
-  const [account, setAccount] = useState<string | null>(null);
+  const { houseId, escrow, tenants, host } = props;
+  const { account, send } = useWallet();
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0); // fuerza recarga del estado on-chain
 
-  // near-connect usa APIs del navegador: se carga solo en el cliente.
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const { NearConnector } = await import("@hot-labs/near-connect");
-      const c = new NearConnector({ network });
-      connectorRef.current = c;
-      c.on("wallet:signIn", (t) => alive && setAccount(t.accounts[0]?.accountId ?? null));
-      c.on("wallet:signOut", () => alive && setAccount(null));
-      try {
-        const { accounts } = await c.getConnectedWallet();
-        if (alive) setAccount(accounts[0]?.accountId ?? null);
-      } catch {
-        /* sin sesión previa */
-      }
-    })();
-    return () => { alive = false; };
-  }, [network]);
-
-  const connect = async () => {
-    setError(null);
-    try { await connectorRef.current?.connect(); } catch (e) { setError(msg(e)); }
-  };
-  const disconnect = async () => { await connectorRef.current?.disconnect(); setAccount(null); };
-
-  const send = useCallback(async (tx: ReturnType<typeof contractCall>) => {
-    setError(null);
-    try {
-      const wallet = await connectorRef.current!.wallet();
-      await wallet.signAndSendTransaction(tx);
-      setTick((t) => t + 1);
-    } catch (e) { setError(msg(e)); }
-  }, []);
+  const run = useCallback(
+    async (tx: Tx) => {
+      setError(null);
+      const err = await send(tx);
+      if (err) setError(err);
+      else setTick((t) => t + 1);
+    },
+    [send],
+  );
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="text-zinc-500">Red: <strong>{network}</strong> · Contrato: <code>{escrow}</code></span>
-        {account ? (
-          <span>Wallet: <strong>{account}</strong> <button className="underline" onClick={disconnect}>salir</button></span>
-        ) : (
-          <button className={btn} onClick={connect}>Conectar wallet NEAR</button>
-        )}
-      </div>
+      <p className="text-sm text-zinc-500">Contrato: <code>{escrow}</code></p>
       {!host?.nearAccount && (
         <p className="rounded-md bg-amber-100 p-2 text-sm text-amber-900">
           El hospedante todavía no configuró su cuenta NEAR: sin ella no se pueden crear garantías.
@@ -82,7 +49,7 @@ export default function GuaranteePanel(props: {
       {error && <p role="alert" className="rounded-md bg-red-100 p-2 text-sm text-red-800">{error}</p>}
       {tenants.length === 0 && <p className="text-sm text-zinc-500">No hay inquilinos todavía.</p>}
       {tenants.map((t) => (
-        <Card key={t.memberId} {...{ houseId, escrow, t, host, account, send, tick }} />
+        <Card key={t.memberId} {...{ houseId, escrow, t, host, account, tick }} send={run} />
       ))}
     </div>
   );

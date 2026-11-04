@@ -35,6 +35,8 @@ export const GAS_DEFAULT = "30000000000000"; // 30 Tgas
 export const GAS_PAYOUT = "100000000000000"; // 100 Tgas: métodos que transfieren
 
 /** Transacción de llamada a función en el formato de near-connect. */
+type Tx = ReturnType<typeof transferTx> | ReturnType<typeof contractCall>;
+export type { Tx };
 export function contractCall(
   contract: string,
   method: string,
@@ -54,5 +56,13 @@ export function contractCall(
         },
       },
     ],
+  };
+}
+
+/** Transferencia simple de NEAR a una cuenta (por ejemplo, aportar al fondo del DAO). */
+export function transferTx(receiver: string, depositYocto: string) {
+  return {
+    receiverId: receiver,
+    actions: [{ type: "Transfer" as const, params: { deposit: depositYocto } }],
   };
 }

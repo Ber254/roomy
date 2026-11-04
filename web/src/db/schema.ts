@@ -36,6 +36,8 @@ export const houses = pgTable("houses", {
   currency: text("currency").notNull().default("USD"),
   // cuenta NEAR que recibe el alquiler (casero/hospedante)
   hostNearAccount: text("host_near_account"),
+  // DAO de la casa en Sputnik (fondo común y votaciones). Null = todavía no creado
+  daoAccount: text("dao_account"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

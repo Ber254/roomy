@@ -34,3 +34,24 @@ export async function viewCall<T>(contract: string, method: string, args: object
   if (!result) throw new Error("Respuesta RPC sin resultado");
   return JSON.parse(Buffer.from(result).toString("utf8")) as T;
 }
+
+/** Saldo de una cuenta en yoctoNEAR (string). */
+export async function viewAccountBalance(accountId: string): Promise<string> {
+  const res = await fetch(rpcUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "roomy",
+      method: "query",
+      params: { request_type: "view_account", finality: "final", account_id: accountId },
+    }),
+  });
+  if (!res.ok) throw new Error(`RPC ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(`RPC: ${data.error.cause?.name ?? data.error.message ?? "error"}`);
+  if (data.result?.error) throw new Error(`RPC: ${String(data.result.error).slice(0, 120)}`);
+  const amount = data.result?.amount;
+  if (typeof amount !== "string") throw new Error("Respuesta RPC sin saldo");
+  return amount;
+}

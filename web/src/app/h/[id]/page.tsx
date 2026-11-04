@@ -6,6 +6,8 @@ import { getTokens } from "@/lib/intents";
 import { addExpense, setNearAccount } from "@/app/actions";
 import PayButton, { type TokenOption } from "@/components/PayButton";
 import GuaranteePanel from "@/components/GuaranteePanel";
+import DaoPanel from "@/components/DaoPanel";
+import { WalletButton, WalletProvider } from "@/components/WalletProvider";
 import { ESCROW_CONTRACT, NEAR_NETWORK } from "@/lib/near";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +58,7 @@ export default async function HousePage({
     .map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.nearAccount }));
 
   return (
+    <WalletProvider network={NEAR_NETWORK}>
     <main className="mx-auto max-w-2xl space-y-8 px-4 py-8">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
@@ -137,13 +140,28 @@ export default async function HousePage({
         )}
       </section>
 
+      <section className="space-y-2">
+        <h2 className="text-xl font-semibold">Wallet</h2>
+        <WalletButton />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-xl font-semibold">Fondo común y votaciones</h2>
+        <DaoPanel
+          houseId={id}
+          houseName={house.name}
+          isHost={me.isHost}
+          members={mems.map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.nearAccount, isHost: m.isHost }))}
+          createDepositNear={process.env.NEXT_PUBLIC_DAO_CREATE_DEPOSIT_NEAR ?? "6"}
+        />
+      </section>
+
       <section>
         <h2 className="mb-3 text-xl font-semibold">Garantías on-chain</h2>
         {ESCROW_CONTRACT ? (
           <GuaranteePanel
             houseId={id}
             escrow={ESCROW_CONTRACT}
-            network={NEAR_NETWORK}
             tenants={tenants}
             host={hostMember ? { name: hostMember.displayName, nearAccount: hostMember.nearAccount } : null}
           />
@@ -219,5 +237,6 @@ export default async function HousePage({
         </section>
       )}
     </main>
+    </WalletProvider>
   );
 }

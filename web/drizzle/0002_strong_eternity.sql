@@ -1,0 +1,1 @@
+ALTER TABLE "houses" ADD COLUMN "dao_account" text;
