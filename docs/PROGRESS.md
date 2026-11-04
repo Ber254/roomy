@@ -18,7 +18,8 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling), tareas | ⬜ | |
-| Votación, calendario | ⬜ | Mockup / solo si hay tiempo |
+| Votación y fondo común (Sputnik DAO) | 🟡 | Constructores de transacciones y política listos (`web/src/lib/sputnik.ts`, 8 tests). Falta UI, DB (`houses.dao_account`) y prueba en testnet |
+| Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
 | README final, video, post en X, entrega | ⬜ | |
 
@@ -28,7 +29,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - ⬜ Crear proyecto en Neon y poner `DATABASE_URL` en `web/.env.local` (no compartir por chat), luego `npm run db:push`.
 - ✅ Repo de Safexy recibido (`Ber254/stellar-rental-guarantee`): está en Stellar/Soroban, ver decisión del 04-nov.
 - ✅ Reglas del hackathon leídas: ver `docs/HACKATHON_RULES.md`. Límite de entrega: 14-nov 23:59 UTC (20:59 Argentina).
-- ⬜ **Decisión del usuario:** qué tracks marcar (ver `docs/HACKATHON_RULES.md`) y si se integra Sputnik DAO.
+- ✅ Tracks decididos (04-nov, el usuario delegó): **Social Money** (con Sputnik DAO), **Real-World Money** y **Open Innovation**. Condición de salida abajo.
 - ⬜ Crear subcuenta `escrow.hakaroomy.near` y desplegar el contrato (la clave de deploy nunca va al repo).
 
 ## Decisiones
@@ -40,6 +41,8 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | 03-nov | Montos en centavos (integer) y garantías en yoctoNEAR (string) | Evita errores de punto flotante y desbordes |
 | 03-nov | Escrow propio; Safexy detrás de un adapter | Safexy es una incógnita sin docs; no depender de ello para la demo |
 | 03-nov | Sin auth con wallet: invitación por link + nombre | Ahorra días; la wallet se usa solo para pagar y depositar |
+| 04-nov | Sumar **Sputnik DAO** y apuntar a Social Money (además de Real-World Money y Open Innovation) | Social Money pide "presupuestos compartidos y propiedad colectiva sobre Sputnik DAO", que es literalmente una casa; Real-World Money apunta a "empresas reales" y Roomy encaja a medias. Convierte la votación de mockup en feature real on-chain (propuestas `Vote`) y el fondo común en propuestas `Transfer`. Costo absorbible: el avance va ~4 días adelantado. Sin datos de competencia: la decisión se basa en encaje y riesgo |
+| 04-nov | **Condición de salida de Social Money:** si el 9-nov el ciclo crear DAO -> proponer -> votar -> ejecutar no funciona en testnet con wallet real, se retira el track Social Money y la votación queda como demo etiquetada | No afirmar en el README ni en el formulario lo que no corre; el pre-filtro automático verifica que el proyecto haga lo que dice |
 | 04-nov | Safexy no se "embebe": es Stellar (Soroban, USDC testnet), el hackathon exige NEAR. Se usa el escrow NEAR propio y se toma el modelo de Safexy (acuerdo entre partes, devoluciones parciales, fee) como diseño | Cross-chain real es inviable: Safexy es solo testnet y NEAR Intents opera solo en mainnet. No se presenta como integración lo que no lo es |
 
 ## Riesgos abiertos
@@ -80,3 +83,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Verificado en Chromium real (viewport móvil) con la API simulada: renderiza estados y montos. **No verificado:** conexión de wallet, firma de transacciones, lectura real por RPC (los RPC de NEAR están bloqueados en el entorno).
 - Config nueva en `web/.env.example`: `NEXT_PUBLIC_NEAR_NETWORK`, `NEXT_PUBLIC_ESCROW_CONTRACT`, `NEAR_RPC_URL`, `ONECLICK_JWT`.
 - Siguiente: desplegar el escrow en testnet (requiere cuenta testnet del usuario) y probar el ciclo completo con wallet.
+
+### 2026-11-04 (día 2, cierre)
+- Decisión de tracks (delegada por el usuario): Social Money + Real-World Money + Open Innovation, con condición de salida el 9-nov.
+- Leído el código de `near-daos/sputnik-dao-contract`: existen `Vote` (señalización sin ejecución), `Transfer`, `AddMemberToRole`; `act_proposal` exige reenviar el `kind`; el bond por defecto es 1 NEAR (usamos 0.1 NEAR con política propia).
+- `web/src/lib/sputnik.ts`: política de casa, crear DAO vía factory, proponer, votar. **Sin probar en red.** El depósito de creación del DAO es un parámetro a confirmar en testnet (no verificado).
+- Siguiente: columna `houses.dao_account`, UI de votación y fondo común, cuenta testnet del usuario, despliegue del escrow en testnet.
