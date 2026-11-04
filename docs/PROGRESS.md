@@ -16,7 +16,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
 | UI: casas, invitaciones, gastos | 🟡 | Escrita (inicio, panel de casa, acciones). Compila y pasa lint, **sin probar contra la base**: falta probarla en local |
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
-| UI: garantías on-chain | ⬜ | |
+| UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling), tareas | ⬜ | |
 | Votación, calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
@@ -73,3 +73,10 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Migración `0001` agrega `quote`, `deadline`, `origin_symbol`, `refund_to` a `payments`: **hay que correr `npm run db:push` de nuevo.**
 - Escrow reescrito en NEAR con el modelo de Safexy (proponer/aceptar/contraofertar, devoluciones parciales, devolución unilateral del arrendador, fee 5 bps solo sobre lo devuelto). 24 tests, compila a wasm. Sin extensiones de plazo. Declarado en `docs/ESCROW.md` como baseline Stellar + reescritura nueva.
 - Siguiente: UI de garantías (conectar wallet, fondear, proponer/aceptar) y despliegue en testnet, luego `escrow.hakaroomy.near` en mainnet (requiere al usuario).
+
+### 2026-11-04 (día 2, noche)
+- Migración de `payments` aplicada por el usuario en Neon (`Changes applied`).
+- UI de garantías: `GuaranteePanel` (conexión con `@hot-labs/near-connect`, red configurable), `GET /api/guarantees/[houseId]/[memberId]` (lee el estado on-chain por RPC; la cadena es la fuente de verdad), utilidades `near.ts` (yocto sin punto flotante) y `near-rpc.ts`. 24 tests.
+- Verificado en Chromium real (viewport móvil) con la API simulada: renderiza estados y montos. **No verificado:** conexión de wallet, firma de transacciones, lectura real por RPC (los RPC de NEAR están bloqueados en el entorno).
+- Config nueva en `web/.env.example`: `NEXT_PUBLIC_NEAR_NETWORK`, `NEXT_PUBLIC_ESCROW_CONTRACT`, `NEAR_RPC_URL`, `ONECLICK_JWT`.
+- Siguiente: desplegar el escrow en testnet (requiere cuenta testnet del usuario) y probar el ciclo completo con wallet.

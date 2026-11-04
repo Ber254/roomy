@@ -5,6 +5,8 @@ import { formatCents } from "@/lib/money";
 import { getTokens } from "@/lib/intents";
 import { addExpense, setNearAccount } from "@/app/actions";
 import PayButton, { type TokenOption } from "@/components/PayButton";
+import GuaranteePanel from "@/components/GuaranteePanel";
+import { ESCROW_CONTRACT, NEAR_NETWORK } from "@/lib/near";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,10 @@ export default async function HousePage({
   const sortedExps = [...exps].sort((a, b) => +b.createdAt - +a.createdAt);
   const sortedPays = [...pays].sort((a, b) => +b.createdAt - +a.createdAt);
   const myAccount = mems.find((m) => m.id === me.id)?.nearAccount;
+  const hostMember = mems.find((m) => m.isHost) ?? null;
+  const tenants = mems
+    .filter((m) => !m.isHost)
+    .map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.nearAccount }));
 
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-4 py-8">
@@ -128,6 +134,23 @@ export default async function HousePage({
               );
             })}
           </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-xl font-semibold">Garantías on-chain</h2>
+        {ESCROW_CONTRACT ? (
+          <GuaranteePanel
+            houseId={id}
+            escrow={ESCROW_CONTRACT}
+            network={NEAR_NETWORK}
+            tenants={tenants}
+            host={hostMember ? { name: hostMember.displayName, nearAccount: hostMember.nearAccount } : null}
+          />
+        ) : (
+          <p className="text-sm text-zinc-500">
+            El contrato escrow todavía no está desplegado (falta <code>NEXT_PUBLIC_ESCROW_CONTRACT</code>).
+          </p>
         )}
       </section>
 
