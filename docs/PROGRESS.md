@@ -13,9 +13,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Schema DB (Neon + Drizzle) | ✅ | Aplicado a Neon con `db:push` (10 tablas) |
 | Lógica de balances + tests | ✅ | `web/src/lib/balances.ts` |
 | Contrato escrow (Rust) | ✅ | 7 tests; no desplegado todavía |
-| Pagos vía NEAR Intents | ⛔ | Red del entorno bloquea `1click.chaindefuser.com` |
+| Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
 | UI: casas, invitaciones, gastos | 🟡 | Escrita (inicio, panel de casa, acciones). Compila y pasa lint, **sin probar contra la base**: falta probarla en local |
-| UI: pagar con Intents | ⬜ | Depende del desbloqueo de red |
+| UI: pagar con Intents | ⬜ | Siguiente: botón "Pagar" (quote → depósito → polling de status) |
 | UI: garantías on-chain | ⬜ | |
 | Chat (polling), tareas | ⬜ | |
 | Votación, calendario | ⬜ | Mockup / solo si hay tiempo |
@@ -24,10 +24,11 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 
 ## Bloqueos y pendientes del usuario
 
-- ⛔ Agregar `1click.chaindefuser.com` a Allowed domains en la red del entorno cloud.
+- ✅ Red desbloqueada (04-nov): `1click.chaindefuser.com` y `nearhackathon.com` en Allowed domains. Aplicó en la misma sesión.
 - ⬜ Crear proyecto en Neon y poner `DATABASE_URL` en `web/.env.local` (no compartir por chat), luego `npm run db:push`.
 - ✅ Repo de Safexy recibido (`Ber254/stellar-rental-guarantee`): está en Stellar/Soroban, ver decisión del 04-nov.
-- ⬜ Confirmar reglas del hackathon en nearhackathon.com (el sandbox no llega a ese sitio).
+- ✅ Reglas del hackathon leídas: ver `docs/HACKATHON_RULES.md`. Límite de entrega: 14-nov 23:59 UTC (20:59 Argentina).
+- ⬜ **Decisión del usuario:** qué tracks marcar (ver `docs/HACKATHON_RULES.md`) y si se integra Sputnik DAO.
 - ⬜ Crear subcuenta `escrow.hakaroomy.near` y desplegar el contrato (la clave de deploy nunca va al repo).
 
 ## Decisiones
@@ -62,3 +63,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Schema aplicado a Neon por el usuario (`npm run db:push` OK). Bug corregido: `drizzle.config.ts` no cargaba `.env.local`.
 - UI v0: crear casa, unirse con código, registrar gastos con split, balances y deudas simplificadas. Botón "Pagar con NEAR" deshabilitado hasta tener el cliente de Intents.
 - Pendiente de probar: flujo completo en local (`npm run dev`), porque el entorno no llega a Neon.
+
+### 2026-11-04 (día 2, tarde)
+- Red desbloqueada. Reglas del hackathon verificadas en `docs/HACKATHON_RULES.md`: **ninguna integración es obligatoria**; Intents suma pero no es requisito.
+- Spike de 1Click OK: `POST /v0/quote` con `dry: true`, HTTP 201. 1 USDC (Base) -> 0.994796 USDC (NEAR) en `hakaroomy.near`, ETA 35 s. Con `EXACT_OUTPUT`, para entregar 1.000000 USDC el pagador deposita 1.015222 (el excedente se reembolsa).
+- `web/src/lib/intents.ts` + tests. Nota: en el sandbox, el `fetch` de Node necesita `NODE_USE_ENV_PROXY=1` para las pruebas en vivo (`INTENTS_LIVE=1`); en una máquina normal no.
+- Pendiente de decidir: el pago real de ~US$1 en mainnet requiere fondos y firma del usuario (no se hace sin confirmación explícita).
