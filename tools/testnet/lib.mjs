@@ -10,9 +10,9 @@ export const near = (yocto) => Number(BigInt(yocto) / 10n ** 20n) / 10_000; // y
 export const YOCTO = (n) => BigInt(Math.round(n * 1e6)) * 10n ** 18n; // NEAR -> yocto (hasta 6 decimales)
 
 /** Crea una cuenta de testnet con el servicio gratuito (el mismo que usa near-cli-rs) y devuelve un Account listo para firmar. */
-export async function createFundedAccount(prefix) {
+export async function createFundedAccount(prefix, fixedId) {
   const key = KeyPair.fromRandom("ed25519");
-  const id = `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}.testnet`;
+  const id = fixedId ?? `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}.testnet`;
   const res = await fetch(HELPER, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
