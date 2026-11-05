@@ -2,7 +2,7 @@
 // y nunca se guardan ni se imprimen. Solo testnet: estas cuentas no tienen ningún valor.
 import { Account, JsonRpcProvider, KeyPair, KeyPairSigner } from "near-api-js";
 
-export const RPC = process.env.NEAR_RPC_URL ?? "https://rpc.testnet.near.org";
+export const RPC = process.env.NEAR_RPC_URL ?? "https://rpc.testnet.fastnear.com";
 export const HELPER = process.env.NEAR_HELPER_URL ?? "https://helper.nearprotocol.com/account";
 export const provider = new JsonRpcProvider({ url: RPC });
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

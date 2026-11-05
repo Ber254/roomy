@@ -1,9 +1,11 @@
 import { NEAR_NETWORK } from "./near";
 
 // Lectura de estado on-chain (solo servidor). RPC configurable por entorno.
+// Los RPC públicos *.near.org están en desuso (responden 429 "THIS ENDPOINT IS DEPRECATED"): se usa FastNEAR por defecto.
+// Se puede cambiar con NEAR_RPC_URL.
 const DEFAULT_RPC = {
-  mainnet: "https://rpc.mainnet.near.org",
-  testnet: "https://rpc.testnet.near.org",
+  mainnet: "https://rpc.mainnet.fastnear.com",
+  testnet: "https://rpc.testnet.fastnear.com",
 } as const;
 
 export const rpcUrl = () => process.env.NEAR_RPC_URL ?? DEFAULT_RPC[NEAR_NETWORK];
