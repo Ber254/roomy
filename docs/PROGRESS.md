@@ -12,7 +12,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Scaffold Next.js 15 + Tailwind | ✅ | `web/` |
 | Schema DB (Neon + Drizzle) | ✅ | Aplicado a Neon con `db:push` (10 tablas) |
 | Lógica de balances + tests | ✅ | `web/src/lib/balances.ts` |
-| Contrato escrow (Rust) | ✅ | Modelo de Safexy reescrito para NEAR. 24 tests unitarios **y ciclo completo validado en testnet real** (44 verificaciones, 05-nov). **Falta desplegarlo en la cuenta definitiva.** Ver `docs/ESCROW.md` |
+| Contrato escrow (Rust) | ✅ | Modelo de Safexy reescrito para NEAR. 24 tests unitarios **y ciclo completo validado en testnet real** (44 verificaciones, 05-nov). **Desplegado en testnet: `roomy-escrow-bernardo.testnet`.** Ver `docs/ESCROW.md` |
 | Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
 | UI: casas, invitaciones, gastos | ✅ | Verificado de punta a punta contra Postgres real |
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
@@ -139,3 +139,10 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - **Dos defectos reales del contrato** que los 24 tests unitarios no podían ver, ya corregidos: (1) compilación sin `--cfg near` (se perdían los mensajes de error), (2) `execute_settlement`/`return_to_guarantor` devolvían una promesa unida, prohibida por el runtime (habrían fallado siempre). Detalle en `docs/ESCROW.md`.
 - **Condición de salida de Social Money (09-nov): CUMPLIDA** para el ciclo del DAO. Se mantienen los tres tracks. Sigue pendiente la firma desde una wallet real en la UI.
 - **Pendiente:** desplegar el escrow en una cuenta definitiva y cargar `NEXT_PUBLIC_ESCROW_CONTRACT` en Vercel (requiere un nuevo deploy, es variable pública); pago real por Intents (depósito de ~US$0.11 desde Solana o ~US$0.26 desde Base); prueba de conexión de wallet en la UI.
+
+### 2026-11-05 (día 3, tarde) — escrow desplegado
+- **Escrow desplegado en testnet: `roomy-escrow-bernardo.testnet`** (fee 5 bps; admin y treasury = la propia cuenta del contrato). El hash del código on-chain (`C6jhtXtk11TuePoHemEnHmmsNUh6xHS1dJnvjarW7y1m`) es idéntico al `.wasm` compilado. La clave del deploy se guardó **fuera del repo**; no se imprimió ni se subió.
+- **La app lee el contrato real (11 verificaciones, 0 fallos):** `GET /api/guarantees` devuelve la garantía real (Active, partes correctas, propuesta 1.5/0.5 NEAR) y la pantalla de la casa lo muestra con los montos y partes correctos; una casa sin garantía muestra "sin garantía" sin romper nada. Script: `tools/testnet/read-path.ts`.
+- **Para publicarlo:** cargar `NEXT_PUBLIC_ESCROW_CONTRACT=roomy-escrow-bernardo.testnet` en Vercel y redeployar (variable pública: se fija al compilar).
+- **Intents (1Click) dejó de cotizar todos los pares** durante la tarde (`Quoting for this pair is not available`, incluso USDC Base->USDC NEAR que funcionaba). No es un problema de parámetros: se descartó cambiando origen, destino, destinatario, monto y tipo. Bloquea el pago real hasta que se recupere. XLM (Stellar) exige modo de depósito con memo; ETH no se ofrece en la UI (solo stablecoins).
+- **Pendiente de bloqueo (decisión futura):** borrar la clave de acceso del contrato antes de entregar, para que quede verificablemente sin clave de administración (`DeleteKey`). Mientras no se borre, la clave existe solo en el archivo privado de esta sesión.
