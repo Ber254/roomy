@@ -1,0 +1,7 @@
+{
+  "name": "roomy-testnet-validation",
+  "private": true,
+  "type": "module",
+  "description": "Valida el escrow y el DAO contra la testnet real con cuentas descartables (claves generadas localmente).",
+  "dependencies": { "near-api-js": "^7.4.0", "tsx": "^4.19.0" }
+}

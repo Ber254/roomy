@@ -210,7 +210,7 @@ impl Escrow {
     }
 
     /// Sin firma a propósito: ambas partes ya autorizaron los montos exactos.
-    pub fn execute_settlement(&mut self, id: String) -> Promise {
+    pub fn execute_settlement(&mut self, id: String) {
         let mut g = self.must_get(&id);
         self.assert_active(&g);
         let a = self.agreements.get(&id).cloned().expect("No hay acuerdo para ejecutar");
@@ -228,7 +228,7 @@ impl Escrow {
     }
 
     /// Solo el arrendador: devuelve al garante sin negociar (solo puede beneficiar al garante).
-    pub fn return_to_guarantor(&mut self, id: String, amount: U128) -> Promise {
+    pub fn return_to_guarantor(&mut self, id: String, amount: U128) {
         let mut g = self.must_get(&id);
         require!(env::predecessor_account_id() == g.landlord, "Solo el arrendador");
         self.assert_active(&g);
@@ -305,32 +305,16 @@ impl Escrow {
     }
 
     /// Paga al garante (neto de fee) y al arrendador; el fee va al treasury.
-    fn pay_out(
-        &self,
-        guarantor: AccountId,
-        to_guarantor: u128,
-        landlord: AccountId,
-        to_landlord: u128,
-    ) -> Promise {
+    /// Son transferencias independientes: el runtime de NEAR prohíbe devolver una promesa unida (`.and`),
+    /// así que ninguna se devuelve. Al soltarse cada `Promise` queda programada.
+    fn pay_out(&self, guarantor: AccountId, to_guarantor: u128, landlord: AccountId, to_landlord: u128) {
         let fee = fee_for(to_guarantor, self.fee_bps).min(to_guarantor);
         let net = to_guarantor - fee;
-        let mut transfers: Vec<(AccountId, u128)> = Vec::new();
-        if net > 0 {
-            transfers.push((guarantor, net));
+        for (acc, amt) in [(guarantor, net), (landlord, to_landlord), (self.treasury.clone(), fee)] {
+            if amt > 0 {
+                Promise::new(acc).transfer(NearToken::from_yoctonear(amt)).detach();
+            }
         }
-        if to_landlord > 0 {
-            transfers.push((landlord, to_landlord));
-        }
-        if fee > 0 {
-            transfers.push((self.treasury.clone(), fee));
-        }
-        let mut it = transfers.into_iter();
-        let (first, amt) = it.next().expect("no hay nada que pagar");
-        let mut p = Promise::new(first).transfer(NearToken::from_yoctonear(amt));
-        for (acc, amt) in it {
-            p = p.and(Promise::new(acc).transfer(NearToken::from_yoctonear(amt)));
-        }
-        p
     }
 }
 

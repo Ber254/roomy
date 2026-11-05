@@ -1,0 +1,4 @@
+# Imprescindible para el contrato: sin `--cfg near`, near-sdk usa código "local" (sin llamadas reales a la cadena):
+# se pierden los mensajes de error y puede comportarse distinto al desplegarse. `cargo near build` lo hace solo.
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "near"]

@@ -49,10 +49,27 @@ Pending -> Cancelled
 - El garante pone NEAR, que es volátil. Siguiente paso natural: garantías en USDC (NEP-141, `ft_on_transfer`).
 - Sin desplegar. Requiere `escrow.hakaroomy.near` y una clave de deploy que nunca va al repo.
 
+## Errores encontrados al validar en testnet real (2026-11-05)
+
+Los 24 tests unitarios pasaban, pero al correr el contrato en la cadena real aparecieron dos defectos que el entorno
+simulado no puede mostrar:
+
+1. **Compilación sin `--cfg near`.** `near-sdk` tiene una rama "host" (llamadas reales a la cadena) y otra "local"
+   (pura de Rust). Compilado con `cargo build` común usa la local: se perdían los mensajes de error
+   (`WebAssembly trap: unreachable` en lugar de `Smart contract panicked: ...`). Se arregló con
+   `contracts/escrow/.cargo/config.toml` (`rustflags = ["--cfg", "near"]` para el target wasm), de modo que
+   `cargo build --release --target wasm32-unknown-unknown` ya compila bien. `cargo near build` lo hace solo.
+2. **Promesa unida devuelta.** `execute_settlement` y `return_to_guarantor` devolvían `p1.and(p2)`. El runtime de NEAR lo
+   prohíbe (`Returning joint promise is currently prohibited`). Ahora cada transferencia es una promesa independiente
+   y las funciones no devuelven nada.
+
 ## Probar
 
 ```bash
 cd contracts/escrow
 cargo test                                                # 24 tests
 cargo build --release --target wasm32-unknown-unknown     # requiere: rustup target add wasm32-unknown-unknown
+
+# Validación contra la testnet real con cuentas descartables (ver tools/testnet/README.md)
+cd ../../tools/testnet && npm install && npx tsx cycle.ts
 ```
