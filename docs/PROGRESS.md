@@ -19,7 +19,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling) | ✅ | Verificado de punta a punta contra Postgres real (ver `tools/e2e`) |
 | Tareas con turnos | ✅ | Verificado de punta a punta contra Postgres real (asignación, permisos, rotación) |
-| Votación y fondo común (Sputnik DAO) | ✅ | UI completa y **ciclo validado en testnet real** con los mismos constructores de la app: crear DAO, aportar, proponer, votar (mayoría 2 de 3), pago del fondo con saldo exacto, rechazo, sumar roomie. **La integración de wallet y firma desde la UI está validada con una wallet de prueba en el conector real** (17 chequeos); falta probar una wallet real (Meteor) |
+| Votación y fondo común (Sputnik DAO) | ✅ | UI completa y **ciclo validado en testnet real** con los mismos constructores de la app: crear DAO, aportar, proponer, votar (mayoría 2 de 3), pago del fondo con saldo exacto, rechazo, sumar roomie. **La integración de wallet y firma desde la UI está validada con una wallet de prueba en el conector real** (17 chequeos); **validada también con una wallet real (Meteor) en la web pública** (05-nov) |
 | Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
 | README final, video, post en X, entrega | ⬜ | |
@@ -152,3 +152,12 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - **Resultado: 17 chequeos OK, 0 fallos, 9 transacciones firmadas desde los botones de la web:** la wallet aparece en el selector y se conecta; la cuenta se muestra; Crear y Fondear (2 NEAR exactos) la garantía; Proponer 1.5/0.5; el otro lado Acepta y Ejecuta (inquilino +1.49925, arrendador +0.5, garantía `Closed`); Crear DAO (se crea on-chain y se registra en la casa); proponer una decisión; votar con los dos (1 de 2 sigue en votación, 2 de 2 aprueba); sin errores de JavaScript.
 - **Límite:** prueba nuestra integración (conexión, cuenta, firma y formato de acciones), no las pantallas de ninguna wallet real. Que Meteor abre en la web ya se vio en una captura del usuario (selector y panel de Meteor Connect).
 - **Despliegue de producción fallido (653820e, 21:55 UTC):** el log pegado se cortó antes del error. Reproducido en un clon limpio de ese commit (`npm ci` + `npm run build` con variables parecidas a las de Vercel): **compila (exit 0)** y los bloques de JavaScript tienen los mismos hashes que un despliegue de Vercel exitoso anterior. Causa probable: transitoria. Pendiente confirmar con el resto del log o con un redeploy.
+
+### 2026-11-05 (día 3, noche II) — Meteor real en la web pública
+- Prueba manual del usuario con **Meteor Wallet real** (red testnet) en https://roomy-house.vercel.app, cuenta `roomy-hugo-bernardo.testnet`:
+  1. Conectar wallet desde el selector (Meteor Web): la cuenta se muestra en la pantalla.
+  2. **Crear DAO** desde la interfaz: Meteor mostró 6 NEAR hacia `sputnikv2.testnet`; el DAO `casa-test-1.sputnikv2.testnet` se creó on-chain (fondo de 6 NEAR, consejo = la cuenta del usuario, bond 0.1 NEAR, umbral 1/2) y la app lo registró en la casa.
+  3. **Proponer una decisión**: Meteor mostró 0.1 NEAR (bond) hacia el DAO; la propuesta #0 quedó `InProgress` on-chain y visible en la pantalla.
+  4. **Votar a favor**: un voto alcanza la mayoría (consejo de 1); estado `Approved` on-chain y "aprobada" en la pantalla; el bond se devolvió (saldo 3.4849 -> 3.4843 NEAR, solo comisión).
+- Con esto queda cerrado el pendiente de la firma desde una wallet real para el DAO. **Pendiente:** garantías con wallet real (requieren `NEXT_PUBLIC_ESCROW_CONTRACT` en Vercel y una segunda cuenta), y el pago real por Intents.
+- Hallazgos de uso real: (1) el campo "Tu cuenta NEAR" sirve para dos redes (cobro de USDC en mainnet y wallet de testnet): conviene separarlo en dos campos (cambio de base de datos: coordinar `db:push` antes de desplegar). (2) Los RPC públicos `*.near.org` están en desuso (429): la app usa FastNEAR por defecto desde `6c3ce34`.

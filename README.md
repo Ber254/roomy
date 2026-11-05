@@ -48,13 +48,15 @@ in group chats, and the security deposit sits in one person's hands.
 | Escrow on **testnet** | Full lifecycle with exact balances: 44 checks, 0 failures (`tools/testnet/cycle.ts`) |
 | Sputnik DAO on **testnet** | Create, contribute, propose, vote (2 of 3), approved payout with exact balance, rejection, add member: same 44 checks |
 | App reads the real contract | 11 checks: API + page show the real on-chain guarantee (`tools/testnet/read-path.ts`) |
+| Real wallet (Meteor) on the public demo | DAO `casa-test-1.sputnikv2.testnet` created, decision proposed and approved from the web UI, signed with Meteor Wallet (manual run, testnet) |
 | Wallet integration + signing from the web UI | 17 checks, 9 transactions signed from the UI buttons through the real `near-connect` connector with a test wallet (`tools/testnet/wallet-ui.ts`): guarantee create/fund/propose/accept/execute, DAO create, propose and vote |
 | NEAR Intents quotes | Real quotes verified (deposit address, signature, deadline, `PENDING_DEPOSIT` status) |
 | Contract unit tests | 24 |
 | App unit tests | 57 |
 
-**Not yet verified (to be updated before submission):** a completed cross-chain payment (deposit → `SUCCESS`) and the screens
-of a real wallet (Meteor) — the signing path itself is verified with a test wallet in the real connector.
+**Not yet verified (to be updated before submission):** a completed cross-chain payment (deposit → `SUCCESS`) and the guarantee
+flow with a real wallet. The DAO flow **was** verified with a real Meteor Wallet on the public demo (testnet): connect, create the
+DAO (6 NEAR), propose a decision (0.1 NEAR bond, returned on approval) and vote it to `Approved`.
 
 ## Try it (no wallet needed for the first steps)
 
