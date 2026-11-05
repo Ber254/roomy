@@ -48,12 +48,13 @@ in group chats, and the security deposit sits in one person's hands.
 | Escrow on **testnet** | Full lifecycle with exact balances: 44 checks, 0 failures (`tools/testnet/cycle.ts`) |
 | Sputnik DAO on **testnet** | Create, contribute, propose, vote (2 of 3), approved payout with exact balance, rejection, add member: same 44 checks |
 | App reads the real contract | 11 checks: API + page show the real on-chain guarantee (`tools/testnet/read-path.ts`) |
+| Wallet integration + signing from the web UI | 17 checks, 9 transactions signed from the UI buttons through the real `near-connect` connector with a test wallet (`tools/testnet/wallet-ui.ts`): guarantee create/fund/propose/accept/execute, DAO create, propose and vote |
 | NEAR Intents quotes | Real quotes verified (deposit address, signature, deadline, `PENDING_DEPOSIT` status) |
 | Contract unit tests | 24 |
 | App unit tests | 57 |
 
-**Not yet verified (to be updated before submission):** a completed cross-chain payment (deposit → `SUCCESS`) and wallet
-signing from the web UI with a real wallet.
+**Not yet verified (to be updated before submission):** a completed cross-chain payment (deposit → `SUCCESS`) and the screens
+of a real wallet (Meteor) — the signing path itself is verified with a test wallet in the real connector.
 
 ## Try it (no wallet needed for the first steps)
 

@@ -19,7 +19,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling) | ✅ | Verificado de punta a punta contra Postgres real (ver `tools/e2e`) |
 | Tareas con turnos | ✅ | Verificado de punta a punta contra Postgres real (asignación, permisos, rotación) |
-| Votación y fondo común (Sputnik DAO) | ✅ | UI completa y **ciclo validado en testnet real** con los mismos constructores de la app: crear DAO, aportar, proponer, votar (mayoría 2 de 3), pago del fondo con saldo exacto, rechazo, sumar roomie. **Falta probar la firma desde una wallet real en la UI** |
+| Votación y fondo común (Sputnik DAO) | ✅ | UI completa y **ciclo validado en testnet real** con los mismos constructores de la app: crear DAO, aportar, proponer, votar (mayoría 2 de 3), pago del fondo con saldo exacto, rechazo, sumar roomie. **La integración de wallet y firma desde la UI está validada con una wallet de prueba en el conector real** (17 chequeos); falta probar una wallet real (Meteor) |
 | Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
 | README final, video, post en X, entrega | ⬜ | |
@@ -146,3 +146,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - **Para publicarlo:** cargar `NEXT_PUBLIC_ESCROW_CONTRACT=roomy-escrow-bernardo.testnet` en Vercel y redeployar (variable pública: se fija al compilar).
 - **Intents (1Click) dejó de cotizar todos los pares** durante la tarde (`Quoting for this pair is not available`, incluso USDC Base->USDC NEAR que funcionaba). No es un problema de parámetros: se descartó cambiando origen, destino, destinatario, monto y tipo. Bloquea el pago real hasta que se recupere. XLM (Stellar) exige modo de depósito con memo; ETH no se ofrece en la UI (solo stablecoins).
 - **Pendiente de bloqueo (decisión futura):** borrar la clave de acceso del contrato antes de entregar, para que quede verificablemente sin clave de administración (`DeleteKey`). Mientras no se borre, la clave existe solo en el archivo privado de esta sesión.
+
+### 2026-11-05 (día 3, noche) — la interfaz firma de punta a punta
+- `tools/testnet/wallet-ui.ts`: una **wallet de prueba registrada en el conector real** (`near-connect`) firma con cuentas descartables de testnet a través de un firmador local. Un navegador recorre la interfaz con dos ventanas (inquilino y hospedante).
+- **Resultado: 17 chequeos OK, 0 fallos, 9 transacciones firmadas desde los botones de la web:** la wallet aparece en el selector y se conecta; la cuenta se muestra; Crear y Fondear (2 NEAR exactos) la garantía; Proponer 1.5/0.5; el otro lado Acepta y Ejecuta (inquilino +1.49925, arrendador +0.5, garantía `Closed`); Crear DAO (se crea on-chain y se registra en la casa); proponer una decisión; votar con los dos (1 de 2 sigue en votación, 2 de 2 aprueba); sin errores de JavaScript.
+- **Límite:** prueba nuestra integración (conexión, cuenta, firma y formato de acciones), no las pantallas de ninguna wallet real. Que Meteor abre en la web ya se vio en una captura del usuario (selector y panel de Meteor Connect).
+- **Despliegue de producción fallido (653820e, 21:55 UTC):** el log pegado se cortó antes del error. Reproducido en un clon limpio de ese commit (`npm ci` + `npm run build` con variables parecidas a las de Vercel): **compila (exit 0)** y los bloques de JavaScript tienen los mismos hashes que un despliegue de Vercel exitoso anterior. Causa probable: transitoria. Pendiente confirmar con el resto del log o con un redeploy.
