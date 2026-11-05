@@ -12,14 +12,14 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Scaffold Next.js 15 + Tailwind | ✅ | `web/` |
 | Schema DB (Neon + Drizzle) | ✅ | Aplicado a Neon con `db:push` (10 tablas) |
 | Lógica de balances + tests | ✅ | `web/src/lib/balances.ts` |
-| Contrato escrow (Rust) | ✅ | Reescrito con el modelo de Safexy: acuerdo entre partes, parciales, fee 0.05%. 24 tests; **no desplegado**. Ver `docs/ESCROW.md` |
+| Contrato escrow (Rust) | ✅ | Modelo de Safexy reescrito para NEAR. 24 tests unitarios **y ciclo completo validado en testnet real** (44 verificaciones, 05-nov). **Falta desplegarlo en la cuenta definitiva.** Ver `docs/ESCROW.md` |
 | Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
 | UI: casas, invitaciones, gastos | ✅ | Verificado de punta a punta contra Postgres real |
 | UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling) | ✅ | Verificado de punta a punta contra Postgres real (ver `tools/e2e`) |
 | Tareas con turnos | ✅ | Verificado de punta a punta contra Postgres real (asignación, permisos, rotación) |
-| Votación y fondo común (Sputnik DAO) | 🟡 | UI completa: crear DAO, aportar, proponer decisión/pago/sumar roomie, votar. Verificada en navegador con wallet simulada (19 chequeos). **Sin probar en testnet con wallet real** (condición de salida: 9-nov) |
+| Votación y fondo común (Sputnik DAO) | ✅ | UI completa y **ciclo validado en testnet real** con los mismos constructores de la app: crear DAO, aportar, proponer, votar (mayoría 2 de 3), pago del fondo con saldo exacto, rechazo, sumar roomie. **Falta probar la firma desde una wallet real en la UI** |
 | Calendario | ⬜ | Mockup / solo si hay tiempo |
 | Deploy en Vercel | ⬜ | |
 | README final, video, post en X, entrega | ⬜ | |
@@ -130,3 +130,12 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - **Validación de tracks** con las reglas oficiales: ids `realworld`, `social`, `open` son válidos. Encaje: Open Innovation seguro; Real-World Money parcial (pide "empresas reales"); Social Money depende de que el DAO funcione (condición de salida 9-nov).
 - **Validación on-chain, estado:** (1) cotización real de 1Click verificada (HTTP 201, dirección, firma, plazo; estado `PENDING_DEPOSIT`); falta el depósito real. (2) escrow y (3) DAO: pendientes de correr en testnet; el servicio de cuentas gratuitas de testnet es `helper.nearprotocol.com` (según el código de near-cli-rs), pendiente de permitir en la red del entorno.
 - 1Click rechaza algunas direcciones de reembolso con `refundTo is not valid`: ahora se traduce a un mensaje amigable.
+
+### 2026-11-05 (día 3) — validación on-chain real (escrow y DAO)
+- `helper.nearprotocol.com` permitido: crea cuentas de testnet con 10 NEAR. `tools/testnet/cycle.ts` crea 6 cuentas descartables (claves en memoria), despliega el escrow y corre el ciclo completo importando los **mismos constructores de transacciones que la app**.
+- **Resultado: 44 verificaciones OK, 0 fallos.**
+  - Escrow: crear, fondear con monto exacto, proponer, aceptar, ejecutar (inquilino +2.9985 NEAR, treasury +0.0015, arrendador +1 menos gas), devolución parcial (1 NEAR sigue bloqueado), no hay doble ejecución, devolución unilateral del arrendador, cierre (`Closed`, 0 bloqueado) y 8 casos que deben fallar (ajenos, auto-aceptación, exceso, etc.).
+  - DAO: creado con la política de la casa (consejo de 3, bond 0.1 NEAR, mayoría 1/2) con 6 NEAR de depósito; aporte al fondo (+2); decisión aprobada con 2 de 3 votos; pago aprobado y destinatario con **+1 NEAR exacto**; propuesta rechazada sin mover plata; roomie sumado (consejo de 3 a 4); voto doble y voto de ajeno rechazados por el contrato.
+- **Dos defectos reales del contrato** que los 24 tests unitarios no podían ver, ya corregidos: (1) compilación sin `--cfg near` (se perdían los mensajes de error), (2) `execute_settlement`/`return_to_guarantor` devolvían una promesa unida, prohibida por el runtime (habrían fallado siempre). Detalle en `docs/ESCROW.md`.
+- **Condición de salida de Social Money (09-nov): CUMPLIDA** para el ciclo del DAO. Se mantienen los tres tracks. Sigue pendiente la firma desde una wallet real en la UI.
+- **Pendiente:** desplegar el escrow en una cuenta definitiva y cargar `NEXT_PUBLIC_ESCROW_CONTRACT` en Vercel (requiere un nuevo deploy, es variable pública); pago real por Intents (depósito de ~US$0.11 desde Solana o ~US$0.26 desde Base); prueba de conexión de wallet en la UI.

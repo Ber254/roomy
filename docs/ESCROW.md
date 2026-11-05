@@ -47,7 +47,7 @@ Pending -> Cancelled
 - Si una cuenta destino no existe, esa transferencia falla y los fondos quedan sin saldo asignado en el contrato.
   Mitigación futura: callback con reintento.
 - El garante pone NEAR, que es volátil. Siguiente paso natural: garantías en USDC (NEP-141, `ft_on_transfer`).
-- Sin desplegar. Requiere `escrow.hakaroomy.near` y una clave de deploy que nunca va al repo.
+- **Validado en testnet real** (05-nov, 44 verificaciones: ver `tools/testnet`). Falta desplegarlo en la cuenta definitiva con una clave de deploy que nunca va al repo.
 
 ## Errores encontrados al validar en testnet real (2026-11-05)
 
