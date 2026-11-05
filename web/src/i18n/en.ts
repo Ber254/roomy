@@ -76,6 +76,7 @@ export const en: Dict = {
   "api.rpcError": "RPC error",
   "q.cantQuote": "Couldn't get a quote. Check that the recipient's NEAR account exists and that your refund address matches the network of the chosen asset.",
   "q.badRefund": "The refund address is not valid for the network of the chosen asset.",
+  "q.minSwap": "That network currently has a temporary minimum of ${min}: pick another network (for example Solana, Polygon or Optimism).",
   "q.minAmount": "The amount is below the minimum NEAR Intents accepts for that asset.",
 
   "w.network": "Network:",

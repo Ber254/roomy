@@ -79,6 +79,7 @@ export const es = {
   "api.rpcError": "Error de RPC",
   "q.cantQuote": "No se pudo cotizar. Revisá que la cuenta NEAR del destinatario exista y que tu dirección de reembolso corresponda a la red del activo elegido.",
   "q.badRefund": "La dirección de reembolso no es válida para la red del activo elegido.",
+  "q.minSwap": "Esa red tiene hoy un monto mínimo temporal de {min} dólares: elegí otra red (por ejemplo Solana, Polygon u Optimism).",
   "q.minAmount": "El monto es menor al mínimo que acepta NEAR Intents para ese activo.",
 
   // --- wallet

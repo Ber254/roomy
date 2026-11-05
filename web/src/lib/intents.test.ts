@@ -74,6 +74,8 @@ describe("friendlyQuoteError", () => {
     expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"Internal server error"}', makeT("es"))).toMatch(/cuenta NEAR del destinatario/);
     expect(friendlyQuoteError("Amount is too low", makeT("es"))).toMatch(/mínimo/);
     expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"refundTo is not valid"}', makeT("es"))).toMatch(/dirección de reembolso/);
+    expect(friendlyQuoteError('1Click /v0/quote -> 400: {"message":"Temporary swap limits: minimum swap amount is $1,000"}', makeT("es"))).toMatch(/mínimo temporal de 1,000 dólares/);
+    expect(friendlyQuoteError("Temporary swap limits: minimum swap amount is $100", makeT("en"))).toMatch(/temporary minimum of \$100/);
     expect(friendlyQuoteError("otro error", makeT("es"))).toBe("otro error");
     expect(friendlyQuoteError("Internal server error", makeT("en"))).toMatch(/recipient's NEAR account/);
   });

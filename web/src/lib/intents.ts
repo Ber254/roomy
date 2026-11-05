@@ -133,6 +133,8 @@ export const isFinal = (s: SwapStatus) =>
 export function friendlyQuoteError(message: string, t: TFn): string {
   if (/Internal server error/i.test(message)) return t("q.cantQuote");
   if (/refundTo is not valid/i.test(message)) return t("q.badRefund");
+  const min = /minimum swap amount is \$?([\d.,]+)/i.exec(message);
+  if (min) return t("q.minSwap", { min: min[1] });
   if (/amount.*(too low|minimum)|below.*minimum/i.test(message)) return t("q.minAmount");
   return message;
 }
