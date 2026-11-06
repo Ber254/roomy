@@ -174,4 +174,8 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - El usuario retiró 1.02 USDT desde su cuenta de Bybit por la red Polygon PoS a esa dirección (fondos propios, firmado por él). Intents pasó a `PROCESSING` y a `SUCCESS` en menos de 2 minutos: `amountIn` 1.00606, `amountOut` 1.0, reembolso 0.007353 USDT a la dirección de reembolso.
 - Verificación on-chain: `ft_balance_of(hakaroomy.near)` en el contrato USDC de mainnet = `1000000` (1.000000 USDC). La cuenta ya estaba registrada para USDC (`storage_balance_of` total 0.00125 NEAR), no hizo falta `storage_deposit`. Tx destino NEAR `CmWT8vkjr2VbPE3Z2FesSnhY5o2RiKeDG4ckgW1urPTV`; tx origen Polygon `0xacea6800889fde4ced25cb435adee5c619919ac01e2765b2963e408f4ae6b651`.
 - **Cierra el pendiente del pago real por Intents.** Limitación que se mantiene: el depósito se envía a mano; la app no lo firma desde una wallet.
-- **Pendiente:** separar 'Tu cuenta NEAR' en cobro (mainnet) y wallet de testnet; video, post en X, formulario y borrar la clave de administración del contrato.
+- **Pendiente:** video, post en X, formulario y borrar la clave de administración del contrato.
+
+### 2026-11-06 (día 4) — cuenta de cobro separada de la wallet
+- 'Tu cuenta NEAR' ahora son dos campos: **cuenta de cobro** (`members.near_account`, recibe USDC de Intents en mainnet) y **wallet para DAO y garantías** (`members.wallet_account`, la que firma en testnet). El DAO, las garantías y la verificación del consejo usan la wallet. Migración `0003` aplicada en Neon (`ALTER TABLE ... ADD COLUMN`) antes del despliegue. e2e: 2 verificaciones nuevas (guarda la wallet; no pisa la cuenta de cobro).
+- Build de Vercel fallaba con 'Falta DATABASE_URL' al recolectar datos de página: la conexión a la base ahora es perezosa (`web/src/db/index.ts`), así `next build` no necesita la variable. Verificado en producción: despliegue Ready, casa de prueba carga y guarda la wallet.
