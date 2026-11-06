@@ -35,7 +35,12 @@ export default function GuaranteePanel(props: {
       setError(null);
       const err = await send(tx);
       if (err) setError(err);
-      else setTick((n) => n + 1);
+      else {
+        setTick((n) => n + 1);
+        // la wallet responde antes de que la cadena refleje la transacción: se vuelve a leer unos segundos después
+        setTimeout(() => setTick((n) => n + 1), 4000);
+        setTimeout(() => setTick((n) => n + 1), 10000);
+      }
     },
     [send],
   );

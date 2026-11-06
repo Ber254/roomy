@@ -21,7 +21,7 @@ export async function viewCall<T>(contract: string, method: string, args: object
       method: "query",
       params: {
         request_type: "call_function",
-        finality: "final",
+        finality: "optimistic", // refleja de inmediato lo que acaba de firmar el usuario
         account_id: contract,
         method_name: method,
         args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
@@ -46,7 +46,7 @@ export async function viewAccountBalance(accountId: string): Promise<string> {
       jsonrpc: "2.0",
       id: "roomy",
       method: "query",
-      params: { request_type: "view_account", finality: "final", account_id: accountId },
+      params: { request_type: "view_account", finality: "optimistic", // refleja de inmediato lo que acaba de firmar el usuario account_id: accountId },
     }),
   });
   if (!res.ok) throw new Error(`RPC ${res.status}`);

@@ -74,6 +74,9 @@ export default function DaoPanel(props: {
         if (e2) return setError(e2);
       }
       setTick((n) => n + 1);
+      // la wallet responde antes de que la cadena refleje la transacción: se vuelve a leer unos segundos después
+      setTimeout(() => setTick((n) => n + 1), 4000);
+      setTimeout(() => setTick((n) => n + 1), 10000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
