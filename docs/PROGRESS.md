@@ -182,4 +182,9 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 
 ### 2026-11-06 (día 4) — post en X publicado
 - Post: https://x.com/FocoBernardo/status/2118698850445586812 (4 capturas: casa con cuenta de cobro y wallet separadas, pago liquidado, transacción en NEAR Blocks con 1 USDC a `hakaroomy.near`, DAO con propuesta aprobada). Texto con `@NEARProtocol`, `#NEARHackathon` y 'Built at NEAR HACKATHON'.
-- **Pendiente:** formulario de envío (un solo intento), `DeleteKey` del contrato, mantener la demo en línea hasta el 18-nov como mínimo.
+- **Pendiente:** `DeleteKey` del contrato; mantener la demo en línea hasta el 18-nov como mínimo.
+
+### 2026-11-06 (día 4) — envío al hackathon hecho
+- Formulario enviado por el usuario: la página mostró 'SUBMISSION RECEIVED'. Equipo: 1 (solo builder). Tracks: Real-World Money, Social Money, Open Innovation. Cuenta de pago: `hakaroomy.near`. Repo: https://github.com/Ber254/roomy. Post: https://x.com/FocoBernardo/status/2118698850445586812. Resultados anunciados hasta el 18-nov-2026 23:59 UTC; los cambios posteriores se piden con 'Request changes' en la página de confirmación.
+- Hasta esa fecha: repo público, post de X en pie y demo (`roomy-house.vercel.app`) en línea; sin cambios grandes en `main`.
+- **Pendiente:** `DeleteKey` de `roomy-escrow-bernardo.testnet` (irreversible; solo cuando el usuario lo pida).
