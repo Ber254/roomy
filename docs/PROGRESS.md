@@ -179,3 +179,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 ### 2026-11-06 (día 4) — cuenta de cobro separada de la wallet
 - 'Tu cuenta NEAR' ahora son dos campos: **cuenta de cobro** (`members.near_account`, recibe USDC de Intents en mainnet) y **wallet para DAO y garantías** (`members.wallet_account`, la que firma en testnet). El DAO, las garantías y la verificación del consejo usan la wallet. Migración `0003` aplicada en Neon (`ALTER TABLE ... ADD COLUMN`) antes del despliegue. e2e: 2 verificaciones nuevas (guarda la wallet; no pisa la cuenta de cobro).
 - Build de Vercel fallaba con 'Falta DATABASE_URL' al recolectar datos de página: la conexión a la base ahora es perezosa (`web/src/db/index.ts`), así `next build` no necesita la variable. Verificado en producción: despliegue Ready, casa de prueba carga y guarda la wallet.
+
+### 2026-11-06 (día 4) — post en X publicado
+- Post: https://x.com/FocoBernardo/status/2118698850445586812 (4 capturas: casa con cuenta de cobro y wallet separadas, pago liquidado, transacción en NEAR Blocks con 1 USDC a `hakaroomy.near`, DAO con propuesta aprobada). Texto con `@NEARProtocol`, `#NEARHackathon` y 'Built at NEAR HACKATHON'.
+- **Pendiente:** formulario de envío (un solo intento), `DeleteKey` del contrato, mantener la demo en línea hasta el 18-nov como mínimo.
