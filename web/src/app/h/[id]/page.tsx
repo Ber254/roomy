@@ -5,7 +5,7 @@ import { getCurrentMember } from "@/lib/session";
 import { loadHouseState } from "@/lib/house-data";
 import { formatCents } from "@/lib/money";
 import { getTokens } from "@/lib/intents";
-import { addChore, addExpense, rollWeek, setNearAccount, toggleChore } from "@/app/actions";
+import { addChore, addExpense, rollWeek, setNearAccount, setWalletAccount, toggleChore } from "@/app/actions";
 import PayButton, { type TokenOption } from "@/components/PayButton";
 import GuaranteePanel from "@/components/GuaranteePanel";
 import DaoPanel from "@/components/DaoPanel";
@@ -64,10 +64,11 @@ export default async function HousePage({
   const sortedExps = [...exps].sort((a, b) => +b.createdAt - +a.createdAt);
   const sortedPays = [...pays].sort((a, b) => +b.createdAt - +a.createdAt);
   const myAccount = mems.find((m) => m.id === me.id)?.nearAccount;
+  const myWallet = mems.find((m) => m.id === me.id)?.walletAccount;
   const hostMember = mems.find((m) => m.isHost) ?? null;
   const tenants = mems
     .filter((m) => !m.isHost)
-    .map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.nearAccount }));
+    .map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.walletAccount }));
 
   return (
     <WalletProvider network={NEAR_NETWORK}>
@@ -97,6 +98,12 @@ export default async function HousePage({
           <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">{t("h.save")}</button>
         </form>
         <p className="mt-1 text-xs text-zinc-500">{t("h.nearHint")}</p>
+        <h2 className="mb-2 mt-5 text-xl font-semibold">{t("h.walletTitle")}</h2>
+        <form action={setWalletAccount.bind(null, id)} className="flex gap-2">
+          <input name="walletAccount" defaultValue={myWallet ?? ""} placeholder={t("h.walletPlaceholder")} required className={input} />
+          <button className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">{t("h.save")}</button>
+        </form>
+        <p className="mt-1 text-xs text-zinc-500">{t("h.walletHint", { network: NEAR_NETWORK })}</p>
       </section>
 
       <section>
@@ -163,7 +170,7 @@ export default async function HousePage({
           houseId={id}
           houseName={house.name}
           isHost={me.isHost}
-          members={mems.map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.nearAccount, isHost: m.isHost }))}
+          members={mems.map((m) => ({ memberId: m.id, name: m.displayName, nearAccount: m.walletAccount, isHost: m.isHost }))}
           createDepositNear={process.env.NEXT_PUBLIC_DAO_CREATE_DEPOSIT_NEAR ?? "6"}
         />
       </section>
@@ -175,7 +182,7 @@ export default async function HousePage({
             houseId={id}
             escrow={ESCROW_CONTRACT}
             tenants={tenants}
-            host={hostMember ? { name: hostMember.displayName, nearAccount: hostMember.nearAccount } : null}
+            host={hostMember ? { name: hostMember.displayName, nearAccount: hostMember.walletAccount } : null}
           />
         ) : (
           <p className="text-sm text-zinc-500">{t("h.escrowMissing")}</p>

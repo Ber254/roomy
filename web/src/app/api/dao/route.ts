@@ -23,12 +23,12 @@ export async function POST(req: Request) {
   const me = await getCurrentMember(houseId);
   if (!me) return bad(t("api.notMember"), 401);
   if (!me.isHost) return bad(t("api.hostOnlyDao"), 403);
-  if (!me.nearAccount) return bad(t("api.setNearFirst"));
+  if (!me.walletAccount) return bad(t("api.setNearFirst"));
   if (!isHouseDaoAccount(daoAccount, NEAR_NETWORK)) return bad(t("api.badDao"));
 
   try {
     const policy = await viewCall<{ roles?: { name: string; kind: unknown }[] }>(daoAccount, "get_policy", {});
-    if (!councilOf(policy).includes(me.nearAccount)) return bad(t("api.notInCouncil"), 403);
+    if (!councilOf(policy).includes(me.walletAccount)) return bad(t("api.notInCouncil"), 403);
   } catch (e) {
     return bad(t("api.daoVerifyFail", { detail: e instanceof Error ? e.message : "error" }), 502);
   }

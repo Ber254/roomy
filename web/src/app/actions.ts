@@ -110,6 +110,17 @@ export async function setNearAccount(houseId: string, fd: FormData) {
   redirect(path);
 }
 
+export async function setWalletAccount(houseId: string, fd: FormData) {
+  const t = await getT();
+  const me = await getCurrentMember(houseId);
+  if (!me) redirect("/");
+  const path = `/h/${houseId}`;
+  const account = text(fd, "walletAccount", 64).toLowerCase();
+  if (!isNearAccount(account)) fail(path, t("err.nearInvalid"));
+  await db.update(members).set({ walletAccount: account }).where(eq(members.id, me!.id));
+  redirect(path);
+}
+
 // ---------- tareas con turnos ----------
 
 const orderedMemberIds = async (houseId: string) =>

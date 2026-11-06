@@ -49,7 +49,10 @@ export const members = pgTable(
       .notNull()
       .references(() => houses.id, { onDelete: "cascade" }),
     displayName: text("display_name").notNull(),
+    // cuenta de COBRO: recibe USDC (mainnet) cuando le pagan una deuda
     nearAccount: text("near_account"),
+    // wallet para firmar en la red de la app (testnet hoy): DAO y garantías
+    walletAccount: text("wallet_account"),
     isHost: boolean("is_host").notNull().default(false),
     // token de sesión simple (sin auth con wallet en el MVP)
     sessionToken: text("session_token").notNull().unique(),

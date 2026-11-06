@@ -28,7 +28,7 @@ console.log("host:", host.id, "| inquilino:", tenant.id);
 const houseId = crypto.randomUUID(), hostM = crypto.randomUUID(), tenM = crypto.randomUUID();
 const tokH = crypto.randomBytes(16).toString("hex"), tokT = crypto.randomBytes(16).toString("hex");
 sql(`insert into houses (id, name, invite_code) values ('${houseId}', 'Casa Real', 'RP${Math.floor(1000 + Math.random() * 8999)}')`);
-sql(`insert into members (id, house_id, display_name, near_account, is_host, session_token) values ('${hostM}','${houseId}','Hugo','${host.id}',true,'${tokH}'),('${tenM}','${houseId}','Ana','${tenant.id}',false,'${tokT}')`);
+sql(`insert into members (id, house_id, display_name, wallet_account, is_host, session_token) values ('${hostM}','${houseId}','Hugo','${host.id}',true,'${tokH}'),('${tenM}','${houseId}','Ana','${tenant.id}',false,'${tokT}')`);
 
 const id = guaranteeId(houseId, tenM);
 await call(tenant, "create_guarantee", { id, landlord: host.id, amount: Y(2), end_date_ns: null });
@@ -66,7 +66,7 @@ await page.screenshot({ path: process.env.SHOT ?? "/tmp/escrow-real.png", fullPa
 // 3) una casa sin garantía muestra 'sin garantía' y no rompe
 const house2 = crypto.randomUUID(), h2m = crypto.randomUUID(), t2m = crypto.randomUUID(), tok2 = crypto.randomBytes(16).toString("hex");
 sql(`insert into houses (id, name, invite_code) values ('${house2}', 'Casa Vacía', 'RQ${Math.floor(1000 + Math.random() * 8999)}')`);
-sql(`insert into members (id, house_id, display_name, near_account, is_host, session_token) values ('${h2m}','${house2}','Hugo','${host.id}',true,'${tok2}'),('${t2m}','${house2}','Beto','${tenant.id}',false,'${crypto.randomBytes(8).toString("hex")}')`);
+sql(`insert into members (id, house_id, display_name, wallet_account, is_host, session_token) values ('${h2m}','${house2}','Hugo','${host.id}',true,'${tok2}'),('${t2m}','${house2}','Beto','${tenant.id}',false,'${crypto.randomBytes(8).toString("hex")}')`);
 await ctx.addCookies([{ name: `roomy_${house2.replace(/-/g, "")}`, value: tok2, url: BASE }]);
 await page.goto(`${BASE}/h/${house2}`, { waitUntil: "networkidle" });
 await page.waitForSelector("text=sin garantía", { timeout: 30000 });

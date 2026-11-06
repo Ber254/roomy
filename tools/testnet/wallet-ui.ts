@@ -86,7 +86,7 @@ const tag = Math.random().toString(36).slice(2, 7);
 const houseId = crypto.randomUUID(), hostM = crypto.randomUUID(), tenM = crypto.randomUUID();
 const tokH = crypto.randomBytes(16).toString("hex"), tokT = crypto.randomBytes(16).toString("hex");
 sql(`insert into houses (id, name, invite_code) values ('${houseId}', 'Casa UI ${tag}', 'UI${Math.floor(1000 + Math.random() * 8999)}')`);
-sql(`insert into members (id, house_id, display_name, near_account, is_host, session_token) values ('${hostM}','${houseId}','Hugo','${host.id}',true,'${tokH}'),('${tenM}','${houseId}','Ana','${tenant.id}',false,'${tokT}')`);
+sql(`insert into members (id, house_id, display_name, wallet_account, is_host, session_token) values ('${hostM}','${houseId}','Hugo','${host.id}',true,'${tokH}'),('${tenM}','${houseId}','Ana','${tenant.id}',false,'${tokT}')`);
 
 const browser = await chromium.launch();
 const jserrors: string[] = [];
