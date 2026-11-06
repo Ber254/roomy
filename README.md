@@ -51,10 +51,11 @@ in group chats, and the security deposit sits in one person's hands.
 | Real wallets (Meteor) on the public demo | DAO `casa-test-1.sputnikv2.testnet` created, decision proposed and approved; guarantee in `roomy-escrow-bernardo.testnet` created, funded, split proposed, accepted by the other wallet, executed and closed; two Meteor accounts, all signed from the web UI (manual run, testnet) |
 | Wallet integration + signing from the web UI | 17 checks, 9 transactions signed from the UI buttons through the real `near-connect` connector with a test wallet (`tools/testnet/wallet-ui.ts`): guarantee create/fund/propose/accept/execute, DAO create, propose and vote |
 | NEAR Intents quotes | Real quotes verified (deposit address, signature, deadline, `PENDING_DEPOSIT` status) |
+| **Real cross-chain payment (mainnet)** | A roommate paid a debt from the public demo with 1.02 USDT on Polygon; Intents reported `SUCCESS` in under 2 minutes and the host account received exactly **1.000000 USDC** on NEAR mainnet (`CmWT8vkjr2VbPE3Z2FesSnhY5o2RiKeDG4ckgW1urPTV`; Polygon tx `0xacea6800889fde4ced25cb435adee5c619919ac01e2765b2963e408f4ae6b651`). The excess (0.007353 USDT) was refunded. Deposit sent manually from an exchange; the UI creates the quote and tracks the status |
 | Contract unit tests | 24 |
 | App unit tests | 57 |
 
-**Not yet verified (to be updated before submission):** a completed cross-chain payment (deposit → `SUCCESS`). The DAO flow and
+**Not yet verified:** signing the Intents deposit from a connected wallet (today the deposit is sent manually to the address the app shows). The DAO flow and
 the guarantee flow **were** verified with real Meteor Wallets on the public demo (testnet): DAO create (6 NEAR), propose a decision
 (0.1 NEAR bond, returned on approval) and vote to `Approved`; guarantee create, fund (2 NEAR), propose a 1.5/0.5 split, accept
 from the other wallet, execute (tenant +1.49925 NEAR after the 0.05% fee, landlord +0.5) and close.

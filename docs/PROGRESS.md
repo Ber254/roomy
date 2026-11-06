@@ -15,7 +15,7 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 | Contrato escrow (Rust) | ✅ | Modelo de Safexy reescrito para NEAR. 24 tests unitarios **y ciclo completo validado en testnet real** (44 verificaciones, 05-nov). **Desplegado en testnet: `roomy-escrow-bernardo.testnet`.** Ver `docs/ESCROW.md` |
 | Pagos vía NEAR Intents (cliente) | ✅ | `web/src/lib/intents.ts`: tokens, quote `EXACT_OUTPUT`, status. Dry quote real verificado (7 tests, incl. en vivo) |
 | UI: casas, invitaciones, gastos | ✅ | Verificado de punta a punta contra Postgres real |
-| UI: pagar con Intents | 🟡 | Hecho: cotizar, confirmar, dirección de depósito, polling de estado. **Sin probar contra la base ni con un pago real.** Falta firma desde wallet (hoy el depósito es manual) |
+| UI: pagar con Intents | ✅ | Cotizar, confirmar, dirección de depósito, polling de estado. **Pago real verificado en mainnet (06-nov, ver abajo).** Falta firma del depósito desde wallet (hoy el depósito es manual) |
 | UI: garantías on-chain | 🟡 | Panel por inquilino: crear, fondear, proponer/aceptar/rechazar, ejecutar, devolver. Render verificado en navegador con API simulada. **Sin probar con wallet ni contrato desplegado** |
 | Chat (polling) | ✅ | Verificado de punta a punta contra Postgres real (ver `tools/e2e`) |
 | Tareas con turnos | ✅ | Verificado de punta a punta contra Postgres real (asignación, permisos, rotación) |
@@ -167,3 +167,11 @@ Leyenda: ✅ hecho · 🟡 en curso · ⬜ pendiente · ⛔ bloqueado
 - Flujo firmado desde los botones: Ana **Crea** y **Fondea** (2 NEAR) la garantía en `roomy-escrow-bernardo.testnet`, **Propone** 1.5/0.5; el hospedante **Acepta** y **Ejecuta**. Resultado on-chain: garantía `Closed`, 0 bloqueado; Ana 5 -> 4.49864 NEAR (puso 2, recibió 1.5 menos fee de 0.05%, más comisiones); Berna 3.4843 -> 3.98377 NEAR (+0.5 menos comisión).
 - Hallazgo y corrección: la tarjeta seguía en "sin garantía" justo después de firmar porque la lectura iba a la cadena a finalidad `final` y la wallet responde antes. Ahora se lee a `optimistic` y se vuelve a leer 4 y 10 segundos después de cada firma (`018a072`). Un commit intermedio (`7c85075`) tuvo un error de sintaxis por un comentario en línea y se corrigió de inmediato; desde entonces el commit solo sale si pasan tipos, lint, pruebas y build.
 - **Pendiente:** pago real por Intents (depósito y estado `SUCCESS`); separar 'Tu cuenta NEAR' en cobro (mainnet) y wallet de testnet; video, post en X, formulario y borrar la clave de administración del contrato.
+
+### 2026-11-06 (día 4) — pago real por NEAR Intents (mainnet)
+- Casa `Casa-test-1` en la web pública: el gasto 'Prueba Intents 2' (US$2, dividido entre Berna y luis) generó la deuda luis -> Berna US$1,00. Berna cobra en `hakaroomy.near`.
+- luis eligió **USDT · pol**, cotizó (depósito ≈ 1.016204 USDT para que Berna reciba 1.0 USDC) y confirmó: la app devolvió la dirección de depósito `0xe47295960e21C40Cf48A7fB7EdD2E78810D6Cc5F`, estado `PENDING_DEPOSIT` verificado contra `/v0/status`.
+- El usuario retiró 1.02 USDT desde su cuenta de Bybit por la red Polygon PoS a esa dirección (fondos propios, firmado por él). Intents pasó a `PROCESSING` y a `SUCCESS` en menos de 2 minutos: `amountIn` 1.00606, `amountOut` 1.0, reembolso 0.007353 USDT a la dirección de reembolso.
+- Verificación on-chain: `ft_balance_of(hakaroomy.near)` en el contrato USDC de mainnet = `1000000` (1.000000 USDC). La cuenta ya estaba registrada para USDC (`storage_balance_of` total 0.00125 NEAR), no hizo falta `storage_deposit`. Tx destino NEAR `CmWT8vkjr2VbPE3Z2FesSnhY5o2RiKeDG4ckgW1urPTV`; tx origen Polygon `0xacea6800889fde4ced25cb435adee5c619919ac01e2765b2963e408f4ae6b651`.
+- **Cierra el pendiente del pago real por Intents.** Limitación que se mantiene: el depósito se envía a mano; la app no lo firma desde una wallet.
+- **Pendiente:** separar 'Tu cuenta NEAR' en cobro (mainnet) y wallet de testnet; video, post en X, formulario y borrar la clave de administración del contrato.
